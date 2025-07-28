@@ -1,0 +1,273 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Service {
+  id          Int          @id @default(autoincrement())
+  name        String       @unique
+  description String?
+  isActive    Boolean      @default(true)
+  workshops   Workshop[]
+  subServices SubService[]
+}
+
+model SubService {
+  id          Int      @id @default(autoincrement())
+  serviceId   Int
+  name        String
+  description String?
+  avatar      String?
+  photos      String[]
+  video       String?
+  minAge      Int      @default(0)
+  order       Int      @default(0)
+  isActive    Boolean  @default(true)
+  hasVariants Boolean  @default(false) // Есть ли варианты
+  price       Float    @default(0)     // Цена для комплектаций без вариантов
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Отношения
+  service     Service  @relation(fields: [serviceId], references: [id])
+  variants    SubServiceVariant[] // Варианты комплектации
+  orderItems  OrderComplectation[]
+
+  @@map("sub_services")
+}
+
+// Вариант комплектации (например: "Обычная" за 400р, "Световая" за 550р)
+model SubServiceVariant {
+    id          Int      @id @default(autoincrement())
+    subServiceId Int
+    name        String
+    description String?
+    price       Float
+    order       Int      @default(0)
+    avatar      String?
+    photos      String[]
+    videos      String[] // Изменено с video String? на videos String[]
+    isActive    Boolean  @default(true)
+    createdAt   DateTime @default(now())
+    updatedAt   DateTime @updatedAt
+
+    subService  SubService @relation(fields: [subServiceId], references: [id], onDelete: Cascade)
+    orderItems  OrderComplectation[]
+
+    @@map("sub_service_variants")
+}
+
+model School {
+  id      Int     @id @default(autoincrement())
+  name    String  @unique
+  address String
+  note    String?
+  isActive Boolean @default(true)
+  classes Class[]
+  workshops Workshop[]
+}
+
+model Class {
+  id          Int     @id @default(autoincrement())
+  schoolId    Int
+  name        String
+  shift       String?
+  teacher     String?
+  phone       String?
+  note        String?
+  school      School  @relation(fields: [schoolId], references: [id])
+  shifts      Shift[]
+  workshops   Workshop[]
+}
+
+model Shift {
+  id      Int    @id @default(autoincrement())
+  classId Int
+  number  Int    // 1 или 2
+  note    String?
+  class   Class  @relation(fields: [classId], references: [id])
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      UserRole
+  firstName String
+  lastName  String
+  phone     String?
+  city      String?
+  school    String?
+  grade     String?
+  shift     String?
+  age       Int      @default(0) // возраст (обязательное поле, по умолчанию 0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Отношения
+  ordersAsChild   Order[] @relation("ChildOrders")
+  ordersAsParent  Order[] @relation("ParentOrders")
+  workshops       Workshop[] @relation("ExecutorWorkshops")
+  sentMessages    Message[] @relation("SentMessages")
+  chatsAsParent   Chat[] @relation("ParentChats")
+  chatsAsAdmin    Chat[] @relation("AdminChats")
+  pushSubscriptions PushSubscription[]
+
+  @@map("users")
+}
+
+model Order {
+  id                  Int           @id @default(autoincrement())
+  childId             Int
+  parentId            Int
+  workshopId          Int?          // связь с мастер-классом
+  notes               String?       // заметки к заказу
+  status              OrderStatus   @default(pending)
+  paymentStatus       PaymentStatus @default(pending)
+  amount              Float
+  workshopDate        DateTime
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+
+  // Отношения
+  child  User @relation("ChildOrders", fields: [childId], references: [id])
+  parent User @relation("ParentOrders", fields: [parentId], references: [id])
+  workshop Workshop? @relation(fields: [workshopId], references: [id])
+  orderComplectations OrderComplectation[]
+
+  @@map("orders")
+}
+
+model OrderComplectation {
+  id          Int      @id @default(autoincrement())
+  orderId     Int
+  subServiceId Int
+  variantId   Int?     // ID варианта (если есть)
+  quantity    Int      @default(1)
+  price       Float    // Цена выбранного варианта
+  createdAt   DateTime @default(now())
+
+  // Отношения
+  order       Order     @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  subService  SubService @relation(fields: [subServiceId], references: [id])
+  variant     SubServiceVariant? @relation(fields: [variantId], references: [id])
+
+  @@map("order_complectations")
+}
+
+model Workshop {
+  id                  Int             @id @default(autoincrement())
+  serviceId           Int             // связь с услугой
+  schoolId            Int             // связь со школой
+  classId             Int?            // связь с классом (опционально)
+  date                DateTime
+  time                String          // время проведения (например: "14:00")
+  maxParticipants     Int
+  currentParticipants Int             @default(0)
+  paidParticipants    Int             @default(0) // количество оплативших участников
+  status              WorkshopStatus  @default(scheduled)
+  executorId          Int?
+  notes               String?
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
+
+  // Отношения
+  service   Service   @relation(fields: [serviceId], references: [id])
+  school    School    @relation(fields: [schoolId], references: [id])
+  class     Class?    @relation(fields: [classId], references: [id])
+  executor  User?     @relation("ExecutorWorkshops", fields: [executorId], references: [id])
+  orders    Order[]   // заказы, связанные с этим мастер-классом
+
+  @@map("workshops")
+}
+
+model Chat {
+  id        Int      @id @default(autoincrement())
+  parentId  Int
+  adminId   Int
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Отношения
+  parent   User      @relation("ParentChats", fields: [parentId], references: [id])
+  admin    User      @relation("AdminChats", fields: [adminId], references: [id])
+  messages Message[]
+
+  @@map("chats")
+}
+
+model Message {
+  id        Int      @id @default(autoincrement())
+  chatId    Int
+  senderId  Int
+  content   String
+  timestamp DateTime @default(now())
+  isRead    Boolean  @default(false)
+
+  // Отношения
+  sender User @relation("SentMessages", fields: [senderId], references: [id])
+  chat   Chat @relation(fields: [chatId], references: [id])
+
+  @@map("messages")
+}
+
+model PushSubscription {
+  id           Int      @id @default(autoincrement())
+  userId       Int
+  endpoint     String   @unique
+  p256dh       String
+  auth         String
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Отношения
+  user User @relation(fields: [userId], references: [id])
+
+  @@map("push_subscriptions")
+}
+
+// Enums
+enum UserRole {
+  admin
+  executor
+  parent
+  child
+}
+
+enum PenType {
+  regular
+  double
+  light
+}
+
+enum VarnishType {
+  regular
+  sparkle
+}
+
+enum OrderStatus {
+  pending
+  paid
+  completed
+  cancelled
+}
+
+enum PaymentStatus {
+  pending
+  paid
+  refunded
+}
+
+enum WorkshopStatus {
+  scheduled
+  inProgress
+  completed
+  cancelled
+} 
