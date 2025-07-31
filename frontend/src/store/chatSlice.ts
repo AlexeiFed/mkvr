@@ -228,12 +228,15 @@ export const sendMessageToAll = createAsyncThunk(
 interface ChatState {
     conversations: Chat[];
     currentChat: Chat | null;
-    messages: Record<number, Message[]>;
+    messages: { [chatId: number]: Message[] };
     isLoading: boolean;
     error: string | null;
+    isSending: boolean;
     pushSubscription: PushSubscription | null;
     isPushEnabled: boolean;
     unreadCount: number;
+    unreadCounts: { [chatId: number]: number };
+    scrollPositions: { [chatId: number]: number }; // Позиции скролла для каждого чата
 }
 
 // Initial state
@@ -243,9 +246,12 @@ const initialState: ChatState = {
     messages: {},
     isLoading: false,
     error: null,
+    isSending: false,
     pushSubscription: null,
     isPushEnabled: false,
-    unreadCount: 0
+    unreadCount: 0,
+    unreadCounts: {},
+    scrollPositions: {}
 };
 
 // Slice
@@ -255,6 +261,12 @@ const chatSlice = createSlice({
     reducers: {
         setCurrentChat: (state, action: PayloadAction<Chat | null>) => {
             state.currentChat = action.payload;
+        },
+        saveScrollPosition: (state, action: PayloadAction<{ chatId: number; position: number }>) => {
+            state.scrollPositions[action.payload.chatId] = action.payload.position;
+        },
+        clearScrollPosition: (state, action: PayloadAction<number>) => {
+            delete state.scrollPositions[action.payload];
         },
         addMessage: (state, action: PayloadAction<Message>) => {
             const { chatId } = action.payload;
@@ -338,8 +350,8 @@ const chatSlice = createSlice({
                     }
                 });
 
-                // Сортируем сообщения по времени
-                state.messages[chatId].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
+                // Убираем сортировку, которая может вызывать перезагрузку
+                // state.messages[chatId].sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime());
             })
             .addCase(fetchMessages.rejected, (state, action) => {
                 state.isLoading = false;
@@ -356,10 +368,21 @@ const chatSlice = createSlice({
                 if (!state.messages[message.chatId]) {
                     state.messages[message.chatId] = [];
                 }
+
                 // Проверяем, что сообщение еще не добавлено (избегаем дублирования)
-                const existingMessage = state.messages[message.chatId].find(m => m.id === message.id);
+                const existingMessage = state.messages[message.chatId].find(m =>
+                    m.id === message.id ||
+                    (m.content === message.content &&
+                        m.senderId === message.senderId &&
+                        Math.abs(new Date(m.timestamp).getTime() - new Date(message.timestamp).getTime()) < 1000)
+                );
+
                 if (!existingMessage) {
                     state.messages[message.chatId].push(message);
+                    // Убираем автоматическую сортировку, которая может вызывать перезагрузку
+                    // state.messages[message.chatId].sort((a, b) =>
+                    //     new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime()
+                    // );
                 }
             })
             .addCase(sendMessage.rejected, (state, action) => {
@@ -439,7 +462,9 @@ export const {
     setPushSubscription,
     clearError,
     markChatAsRead,
-    updateUnreadCount
+    updateUnreadCount,
+    saveScrollPosition,
+    clearScrollPosition
 } = chatSlice.actions;
 
 export default chatSlice.reducer; 

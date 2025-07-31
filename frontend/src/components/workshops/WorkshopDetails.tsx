@@ -60,6 +60,39 @@ const WorkshopDetails: React.FC = () => {
         paymentStatus: 'pending',
         amount: 0
     });
+    const [isEditing, setIsEditing] = useState(false);
+    const [editData, setEditData] = useState({
+        executor: '',
+        phone: '',
+        notes: ''
+    });
+
+    // Парсим данные из notes при загрузке
+    useEffect(() => {
+        if (currentWorkshop?.notes) {
+            try {
+                const parsedNotes = JSON.parse(currentWorkshop.notes);
+                setEditData({
+                    executor: parsedNotes.executor || '',
+                    phone: parsedNotes.phone || '',
+                    notes: parsedNotes.notes || ''
+                });
+            } catch {
+                // Если notes не является JSON, используем как обычный текст
+                setEditData({
+                    executor: currentWorkshop.executor ? `${currentWorkshop.executor.firstName} ${currentWorkshop.executor.lastName}` : '',
+                    phone: '',
+                    notes: currentWorkshop.notes || ''
+                });
+            }
+        } else {
+            setEditData({
+                executor: currentWorkshop?.executor ? `${currentWorkshop.executor.firstName} ${currentWorkshop.executor.lastName}` : '',
+                phone: '',
+                notes: ''
+            });
+        }
+    }, [currentWorkshop]);
 
     // Формируем структуру для двухуровневого заголовка
     const groupedHeaders: GroupedHeader[] = React.useMemo(() => {
@@ -172,6 +205,62 @@ const WorkshopDetails: React.FC = () => {
         setShowPaymentDialog(true);
     };
 
+    const handleEditSave = async () => {
+        if (!id) return;
+
+        try {
+            const response = await fetch(`http://localhost:3001/api/workshops/${id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                body: JSON.stringify({
+                    executor: editData.executor,
+                    phone: editData.phone,
+                    notes: editData.notes
+                })
+            });
+
+            if (response.ok) {
+                setIsEditing(false);
+                dispatch(fetchWorkshopById(id));
+            }
+        } catch (error) {
+            console.error('Ошибка обновления мастер-класса:', error);
+        }
+    };
+
+    // Статистика по комплектациям с вариантами
+    const getComplectationStats = () => {
+        if (!currentWorkshop?.orders) return {};
+
+        const stats: { [key: string]: { total: number; variants: { [variantName: string]: number } } } = {};
+
+        currentWorkshop.orders.forEach(order => {
+            order.orderComplectations?.forEach(comp => {
+                const serviceName = comp.subService.name;
+
+                if (!stats[serviceName]) {
+                    stats[serviceName] = { total: 0, variants: {} };
+                }
+
+                stats[serviceName].total += comp.quantity;
+
+                // Если есть вариант, добавляем его в статистику
+                if (comp.variant) {
+                    const variantName = comp.variant.name;
+                    stats[serviceName].variants[variantName] = (stats[serviceName].variants[variantName] || 0) + comp.quantity;
+                } else {
+                    // Если варианта нет, считаем как "обычная"
+                    stats[serviceName].variants['обычная'] = (stats[serviceName].variants['обычная'] || 0) + comp.quantity;
+                }
+            });
+        });
+
+        return stats;
+    };
+
     const getStatusColor = (status: string): 'primary' | 'warning' | 'success' | 'error' | 'default' => {
         switch (status) {
             case 'scheduled': return 'primary';
@@ -244,7 +333,16 @@ const WorkshopDetails: React.FC = () => {
 
             {/* Информация о мастер-классе */}
             <Paper sx={{ p: 3, mb: 3 }}>
-                <Typography variant="h6" gutterBottom>Информация о мастер-классе</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6">Информация о мастер-классе</Typography>
+                    <Button
+                        variant="outlined"
+                        onClick={() => setIsEditing(!isEditing)}
+                        size="small"
+                    >
+                        {isEditing ? 'Отменить' : 'Редактировать'}
+                    </Button>
+                </Box>
                 <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)' }, gap: 2 }}>
                     <Box>
                         <Typography variant="body2" color="text.secondary">Дата</Typography>
@@ -265,6 +363,52 @@ const WorkshopDetails: React.FC = () => {
                         <Typography variant="body1">{currentWorkshop.class?.name || 'Не указан'}</Typography>
                     </Box>
                     <Box>
+                        <Typography variant="body2" color="text.secondary">Преподаватель</Typography>
+                        {isEditing ? (
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={editData.executor}
+                                onChange={(e) => setEditData(prev => ({ ...prev, executor: e.target.value }))}
+                            />
+                        ) : (
+                            <Typography variant="body1">
+                                {editData.executor || currentWorkshop.class?.teacher || (currentWorkshop.executor ? `${currentWorkshop.executor.firstName} ${currentWorkshop.executor.lastName}` : 'Не указан')}
+                            </Typography>
+                        )}
+                    </Box>
+                    <Box>
+                        <Typography variant="body2" color="text.secondary">Телефон</Typography>
+                        {isEditing ? (
+                            <TextField
+                                fullWidth
+                                size="small"
+                                value={editData.phone}
+                                onChange={(e) => setEditData(prev => ({ ...prev, phone: e.target.value }))}
+                            />
+                        ) : (
+                            <Typography variant="body1">
+                                {editData.phone || currentWorkshop.class?.phone || 'Не указан'}
+                            </Typography>
+                        )}
+                    </Box>
+                    <Box sx={{ gridColumn: { xs: '1', sm: '1 / -1' } }}>
+                        <Typography variant="body2" color="text.secondary">Примечание</Typography>
+                        {isEditing ? (
+                            <TextField
+                                fullWidth
+                                multiline
+                                rows={3}
+                                value={editData.notes}
+                                onChange={(e) => setEditData(prev => ({ ...prev, notes: e.target.value }))}
+                            />
+                        ) : (
+                            <Typography variant="body1">
+                                {editData.notes || 'Нет примечаний'}
+                            </Typography>
+                        )}
+                    </Box>
+                    <Box>
                         <Typography variant="body2" color="text.secondary">Статус</Typography>
                         <Chip
                             label={getStatusText(currentWorkshop.status)}
@@ -279,12 +423,22 @@ const WorkshopDetails: React.FC = () => {
                         </Typography>
                     </Box>
                 </Box>
+                {isEditing && (
+                    <Box sx={{ mt: 2, display: 'flex', gap: 1 }}>
+                        <Button variant="contained" onClick={handleEditSave} size="small">
+                            Сохранить
+                        </Button>
+                        <Button variant="outlined" onClick={() => setIsEditing(false)} size="small">
+                            Отменить
+                        </Button>
+                    </Box>
+                )}
             </Paper>
 
             {/* Статистика */}
             <Paper sx={{ p: 3, mb: 3 }}>
                 <Typography variant="h6" gutterBottom>Статистика</Typography>
-                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(4, 1fr)' }, gap: 2 }}>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(4, 1fr)' }, gap: 2, mb: 3 }}>
                     <Box sx={{ textAlign: 'center' }}>
                         <Typography variant="h6" color="primary">
                             {currentWorkshop.totalParticipants || 0}
@@ -317,6 +471,51 @@ const WorkshopDetails: React.FC = () => {
                             Оплачено
                         </Typography>
                     </Box>
+                </Box>
+
+                {/* Статистика по комплектациям */}
+                <Typography variant="h6" gutterBottom sx={{ mt: 3 }}>Статистика по комплектациям</Typography>
+                <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(auto-fit, minmax(250px, 1fr))' }, gap: 2 }}>
+                    {Object.entries(getComplectationStats()).map(([name, data]) => (
+                        <Box key={name} sx={{
+                            textAlign: 'center',
+                            p: 3,
+                            border: '2px solid #e3f2fd',
+                            borderRadius: 2,
+                            backgroundColor: '#f8f9fa',
+                            boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                        }}>
+                            <Typography variant="h5" color="primary" sx={{ fontWeight: 'bold', mb: 1 }}>
+                                {data.total}
+                            </Typography>
+                            <Typography variant="h6" color="text.primary" sx={{ mb: 2, fontWeight: 'medium' }}>
+                                {name}
+                            </Typography>
+                            <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
+                                {Object.entries(data.variants).map(([variantName, count]) => (
+                                    <Box key={variantName} sx={{
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center',
+                                        p: 1,
+                                        backgroundColor: 'white',
+                                        borderRadius: 1,
+                                        border: '1px solid #e0e0e0'
+                                    }}>
+                                        <Typography variant="body2" color="text.secondary">
+                                            {variantName}
+                                        </Typography>
+                                        <Chip
+                                            label={count}
+                                            size="small"
+                                            color="secondary"
+                                            sx={{ fontWeight: 'bold' }}
+                                        />
+                                    </Box>
+                                ))}
+                            </Box>
+                        </Box>
+                    ))}
                 </Box>
             </Paper>
 

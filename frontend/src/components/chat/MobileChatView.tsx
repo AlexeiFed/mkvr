@@ -50,59 +50,82 @@ const MobileChatView: React.FC<MobileChatViewProps> = ({
     const isChild = user?.role === 'child';
 
     return (
-        <Box sx={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
-            {/* Мобильная шапка - только для админа */}
-            {!isChild && (
-                <AppBar
-                    position="static"
-                    sx={{
-                        background: 'primary.main'
-                    }}
-                >
-                    <Toolbar>
-                        {currentChat ? (
-                            <IconButton
-                                edge="start"
-                                color="inherit"
-                                onClick={onBackToChats}
-                                sx={{ mr: 2 }}
-                            >
-                                <ArrowBack />
-                            </IconButton>
-                        ) : (
-                            <IconButton
-                                edge="start"
-                                color="inherit"
-                                onClick={() => setDrawerOpen(true)}
-                                sx={{ mr: 2 }}
-                            >
-                                <Menu />
-                            </IconButton>
-                        )}
+        <Box sx={{
+            height: '100vh',
+            display: 'flex',
+            flexDirection: 'column',
+            background: isChild ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
+            overflow: 'hidden', // Предотвращаем выход за границы экрана
+            position: 'relative' // Относительное позиционирование
+        }}>
+            {/* Мобильная шапка - для всех пользователей */}
+            <AppBar
+                position="static"
+                sx={{
+                    background: isChild ? 'rgba(255, 255, 255, 0.1)' : 'primary.main',
+                    backdropFilter: 'blur(10px)',
+                    borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                    flexShrink: 0 // Предотвращаем сжатие шапки
+                }}
+            >
+                <Toolbar>
+                    {currentChat ? (
+                        <IconButton
+                            edge="start"
+                            color="inherit"
+                            onClick={onBackToChats}
+                            sx={{ mr: 2 }}
+                        >
+                            <ArrowBack />
+                        </IconButton>
+                    ) : (
+                        <IconButton
+                            edge="start"
+                            color="inherit"
+                            onClick={() => setDrawerOpen(true)}
+                            sx={{ mr: 2 }}
+                        >
+                            <Menu />
+                        </IconButton>
+                    )}
 
-                        <Typography variant="h6" sx={{ flexGrow: 1 }}>
-                            {currentChat ? 'Чат' : 'Сообщения'}
-                        </Typography>
+                    <Typography variant="h6" sx={{
+                        flexGrow: 1,
+                        color: isChild ? '#fff' : 'inherit'
+                    }}>
+                        {currentChat ? 'Чат' : 'Сообщения'}
+                    </Typography>
 
-                        {!currentChat && (
-                            <NotificationBadge />
-                        )}
-                    </Toolbar>
-                </AppBar>
-            )}
+                    {!currentChat && (
+                        <NotificationBadge />
+                    )}
+                </Toolbar>
+            </AppBar>
 
             {/* Основной контент */}
-            <Box sx={{ flex: 1, overflow: 'hidden' }}>
+            <Box sx={{
+                flex: 1,
+                overflow: 'hidden',
+                background: isChild ? 'transparent' : 'transparent',
+                display: 'flex',
+                flexDirection: 'column'
+            }}>
                 {currentChat ? (
                     <ChatWindow
                         chat={currentChat}
                         socket={null}
                     />
                 ) : (
-                    <ChatList
-                        conversations={conversations}
-                        currentChat={currentChat}
-                    />
+                    <Box sx={{
+                        height: '100%',
+                        background: isChild ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                        overflow: 'hidden'
+                    }}>
+                        <ChatList
+                            conversations={conversations}
+                            currentChat={currentChat}
+                        />
+                    </Box>
                 )}
             </Box>
 

@@ -37,6 +37,7 @@ interface WorkshopsState {
     error: string | null;
     filters: {
         date: string | null;
+        city: string | null;
         schoolId: string | null;
         classId: string | null;
         serviceId: string | null;
@@ -56,6 +57,7 @@ const initialState: WorkshopsState = {
     error: null,
     filters: {
         date: null,
+        city: null,
         schoolId: null,
         classId: null,
         serviceId: null,
@@ -71,7 +73,7 @@ const initialState: WorkshopsState = {
 // Async thunks
 export const fetchWorkshops = createAsyncThunk(
     'workshops/fetchWorkshops',
-    async (filters: { date?: string | null; schoolId?: string | null; classId?: string | null; serviceId?: string | null } | undefined, { getState }) => {
+    async (filters: { date?: string | null; city?: string | null; schoolId?: string | null; classId?: string | null; serviceId?: string | null } | undefined, { getState }) => {
         const state = getState() as { auth: { token: string | null } };
         const token = state.auth.token;
 
@@ -81,6 +83,7 @@ export const fetchWorkshops = createAsyncThunk(
 
         const params = new URLSearchParams();
         if (filters?.date) params.append('date', filters.date);
+        if (filters?.city) params.append('city', filters.city);
         if (filters?.schoolId) params.append('schoolId', filters.schoolId);
         if (filters?.classId) params.append('classId', filters.classId);
         if (filters?.serviceId) params.append('serviceId', filters.serviceId);
@@ -272,7 +275,7 @@ const workshopsSlice = createSlice({
             state.filters = { ...state.filters, ...action.payload };
         },
         clearFilters: (state) => {
-            state.filters = { date: null, schoolId: null, classId: null, serviceId: null };
+            state.filters = { date: null, city: null, schoolId: null, classId: null, serviceId: null };
         },
         setCurrentWorkshop: (state, action: PayloadAction<Workshop | null>) => {
             state.currentWorkshop = action.payload;

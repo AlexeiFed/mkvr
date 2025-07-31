@@ -18,7 +18,8 @@ import {
     Button,
     TextField,
     InputAdornment,
-    IconButton
+    IconButton,
+    Badge
 } from '@mui/material';
 import {
     Person,
@@ -48,9 +49,14 @@ const ChatList: React.FC<ChatListProps> = ({ conversations, currentChat }) => {
     const [showSendAll, setShowSendAll] = useState(false);
 
     const handleChatSelect = async (chat: Chat) => {
+        const existingMessages = messages[chat.id] || [];
         dispatch(setCurrentChat(chat));
-        await dispatch(fetchMessages(chat.id));
-        // Сбрасываем счетчик непрочитанных сообщений при переходе в чат
+        if (existingMessages.length === 0) {
+            console.log('Загружаем сообщения для чата:', chat.id);
+            await dispatch(fetchMessages(chat.id));
+        } else {
+            console.log('Сообщения уже загружены для чата:', chat.id);
+        }
         await dispatch(resetUnreadCount(chat.id));
     };
 
@@ -90,6 +96,13 @@ const ChatList: React.FC<ChatListProps> = ({ conversations, currentChat }) => {
         }
     };
 
+    // Подсчитываем непрочитанные сообщения для конкретного чата
+    const getUnreadCount = (chat: Chat) => {
+        const chatMessages = messages[chat.id] || [];
+        return chatMessages.filter(msg =>
+            !msg.isRead && msg.senderId !== user?.id
+        ).length;
+    };
 
 
     // Фильтрация чатов по поисковому запросу
@@ -236,6 +249,7 @@ const ChatList: React.FC<ChatListProps> = ({ conversations, currentChat }) => {
                         {filteredConversations.map((chat) => {
                             const lastMessage = getLastMessage(chat);
                             const isSelected = currentChat?.id === chat.id;
+                            const unreadCount = getUnreadCount(chat);
 
                             return (
                                 <ListItem
@@ -259,12 +273,14 @@ const ChatList: React.FC<ChatListProps> = ({ conversations, currentChat }) => {
                                     }}
                                 >
                                     <ListItemAvatar>
-                                        <Avatar sx={{
-                                            background: isChild ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
-                                            color: isChild ? '#fff' : 'inherit'
-                                        }}>
-                                            {getChatAvatar()}
-                                        </Avatar>
+                                        <Badge badgeContent={unreadCount} color="error">
+                                            <Avatar sx={{
+                                                background: isChild ? 'rgba(255, 255, 255, 0.2)' : 'rgba(0, 0, 0, 0.1)',
+                                                color: isChild ? '#fff' : 'inherit'
+                                            }}>
+                                                {getChatAvatar()}
+                                            </Avatar>
+                                        </Badge>
                                     </ListItemAvatar>
                                     <ListItemText
                                         primary={

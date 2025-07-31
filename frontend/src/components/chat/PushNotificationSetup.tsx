@@ -44,7 +44,7 @@ const PushNotificationSetup: React.FC = () => {
             if (result === 'granted') {
                 await subscribeToNotifications();
             }
-        } catch (error) {
+        } catch {
             setError('Ошибка запроса разрешения на уведомления');
         }
     };
@@ -78,7 +78,7 @@ const PushNotificationSetup: React.FC = () => {
             await dispatch(subscribeToPush(pushSubscription));
             dispatch(setPushSubscription(pushSubscription));
             setError(null);
-        } catch (error) {
+        } catch {
             setError('Ошибка подписки на уведомления');
         }
     };
@@ -95,7 +95,7 @@ const PushNotificationSetup: React.FC = () => {
 
             await dispatch(unsubscribeFromPush());
             setError(null);
-        } catch (error) {
+        } catch {
             setError('Ошибка отписки от уведомлений');
         }
     };

@@ -22,7 +22,7 @@ import {
     CircularProgress,
     Box
 } from '@mui/material';
-import { Visibility as VisibilityIcon, Edit as EditIcon, Delete as DeleteIcon } from '@mui/icons-material';
+import { Visibility as VisibilityIcon, Edit as EditIcon, Delete as DeleteIcon, PersonAdd as PersonAddIcon } from '@mui/icons-material';
 import type { Workshop } from '../../types';
 
 interface WorkshopsListProps {
@@ -30,9 +30,10 @@ interface WorkshopsListProps {
     loading: boolean;
     onEdit: (workshop: Workshop) => void;
     onDelete: (id: number) => void;
+    onAssignExecutors: (workshop: Workshop) => void;
 }
 
-const WorkshopsList: React.FC<WorkshopsListProps> = ({ workshops, loading, onEdit, onDelete }) => {
+const WorkshopsList: React.FC<WorkshopsListProps> = ({ workshops, loading, onEdit, onDelete, onAssignExecutors }) => {
     const navigate = useNavigate();
 
     const getStatusColor = (status: string) => {
@@ -86,6 +87,7 @@ const WorkshopsList: React.FC<WorkshopsListProps> = ({ workshops, loading, onEdi
                             <TableCell>Услуга</TableCell>
                             <TableCell>Записано детей</TableCell>
                             <TableCell>Оплатили</TableCell>
+                            <TableCell>Исполнители</TableCell>
                             <TableCell>Статус</TableCell>
                             <TableCell>Действия</TableCell>
                         </TableRow>
@@ -119,6 +121,34 @@ const WorkshopsList: React.FC<WorkshopsListProps> = ({ workshops, loading, onEdi
                                     </Typography>
                                 </TableCell>
                                 <TableCell>
+                                    <Box display="flex" alignItems="center" gap={1}>
+                                        {workshop.executors && workshop.executors.length > 0 ? (
+                                            workshop.executors.slice(0, 2).map((executorItem) => {
+                                                const executor = executorItem.executor || executorItem;
+                                                return (
+                                                    <Chip
+                                                        key={executor.id}
+                                                        label={`${executor.firstName} ${executor.lastName}`}
+                                                        size="small"
+                                                        variant="outlined"
+                                                    />
+                                                );
+                                            })
+                                        ) : (
+                                            <Typography variant="body2" color="text.secondary">
+                                                Не назначены
+                                            </Typography>
+                                        )}
+                                        {workshop.executors && workshop.executors.length > 2 && (
+                                            <Chip
+                                                label={`+${workshop.executors.length - 2}`}
+                                                size="small"
+                                                color="primary"
+                                            />
+                                        )}
+                                    </Box>
+                                </TableCell>
+                                <TableCell>
                                     <Chip
                                         label={getStatusText(workshop.status)}
                                         color={getStatusColor(workshop.status) as 'primary' | 'warning' | 'success' | 'error' | 'default'}
@@ -138,6 +168,15 @@ const WorkshopsList: React.FC<WorkshopsListProps> = ({ workshops, loading, onEdi
                                     <Tooltip title="Редактировать">
                                         <IconButton size="small" color="secondary" onClick={() => onEdit(workshop)}>
                                             <EditIcon />
+                                        </IconButton>
+                                    </Tooltip>
+                                    <Tooltip title="Назначить исполнителей">
+                                        <IconButton
+                                            size="small"
+                                            color="primary"
+                                            onClick={() => onAssignExecutors(workshop)}
+                                        >
+                                            <PersonAddIcon />
                                         </IconButton>
                                     </Tooltip>
                                     <Tooltip title="Удалить">

@@ -12,6 +12,9 @@ import type { AppDispatch, RootState } from '../../store';
 import { fetchUsers, setFilters, clearError, deleteUser } from '../../store/usersSlice';
 import UsersList from './UsersList';
 import UserDetails from './UserDetails';
+import { io as socketIOClient, Socket } from 'socket.io-client';
+
+const SOCKET_URL = 'http://localhost:3001';
 
 const UsersContainer: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -20,6 +23,39 @@ const UsersContainer: React.FC = () => {
 
     useEffect(() => {
         dispatch(fetchUsers(filters));
+    }, [dispatch, filters]);
+
+    // WebSocket для real-time обновлений
+    useEffect(() => {
+        const socket: Socket = socketIOClient(SOCKET_URL, {
+            transports: ['websocket'],
+            withCredentials: true
+        });
+
+        const handleUserRegistered = () => {
+            // Обновляем список пользователей при регистрации нового пользователя
+            dispatch(fetchUsers(filters));
+        };
+
+        const handleUserUpdated = () => {
+            // Обновляем список пользователей при изменении пользователя
+            dispatch(fetchUsers(filters));
+        };
+
+        const handleUserDeleted = () => {
+            // Обновляем список пользователей при удалении пользователя
+            dispatch(fetchUsers(filters));
+        };
+
+        socket.on('user:registered', handleUserRegistered);
+        socket.on('user:updated', handleUserUpdated);
+        socket.on('user:deleted', handleUserDeleted);
+
+        return () => {
+            socket.off('user:registered', handleUserRegistered);
+            socket.off('user:updated', handleUserUpdated);
+            socket.off('user:deleted', handleUserDeleted);
+        };
     }, [dispatch, filters]);
 
     const handleFilterChange = (newFilters: Partial<typeof filters>) => {

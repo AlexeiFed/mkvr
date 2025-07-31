@@ -25,6 +25,7 @@ import WorkshopsList from './WorkshopsList';
 import WorkshopCalendar from './WorkshopCalendar';
 import WorkshopFilters from './WorkshopFilters';
 import WorkshopForm from './WorkshopForm';
+import AssignExecutorsModal from './AssignExecutorsModal';
 import type { Workshop } from '../../types';
 import { io as socketIOClient, Socket } from 'socket.io-client';
 
@@ -38,6 +39,8 @@ const WorkshopsContainer: React.FC = () => {
     const [editWorkshop, setEditWorkshop] = useState<Workshop | null>(null);
     const [deleteId, setDeleteId] = useState<number | null>(null);
     const [showDeleteDialog, setShowDeleteDialog] = useState(false);
+    const [showAssignExecutorsModal, setShowAssignExecutorsModal] = useState(false);
+    const [selectedWorkshop, setSelectedWorkshop] = useState<Workshop | null>(null);
 
     useEffect(() => {
         dispatch(fetchSchools());
@@ -95,6 +98,21 @@ const WorkshopsContainer: React.FC = () => {
         setDeleteId(null);
     };
 
+    const handleAssignExecutors = (workshop: Workshop) => {
+        setSelectedWorkshop(workshop);
+        setShowAssignExecutorsModal(true);
+    };
+
+    const handleAssignExecutorsClose = () => {
+        setShowAssignExecutorsModal(false);
+        setSelectedWorkshop(null);
+    };
+
+    const handleAssignExecutorsSuccess = () => {
+        dispatch(fetchWorkshops(filters));
+        dispatch(fetchWorkshopsStatistics());
+    };
+
     const handleFilterChange = (newFilters: Partial<typeof filters>) => {
         dispatch(setFilters(newFilters));
     };
@@ -147,6 +165,7 @@ const WorkshopsContainer: React.FC = () => {
                         loading={loading}
                         onEdit={handleEdit}
                         onDelete={handleDelete}
+                        onAssignExecutors={handleAssignExecutors}
                     />
                 </Box>
 
@@ -185,6 +204,28 @@ const WorkshopsContainer: React.FC = () => {
                     <Button onClick={handleDeleteConfirm} color="error" variant="contained">Удалить</Button>
                 </DialogActions>
             </Dialog>
+
+            {/* Модальное окно назначения исполнителей */}
+            {selectedWorkshop && (
+                <AssignExecutorsModal
+                    open={showAssignExecutorsModal}
+                    onClose={handleAssignExecutorsClose}
+                    workshopId={selectedWorkshop.id}
+                    workshopTitle={`${selectedWorkshop.service?.name || 'Мастер-класс'} - ${new Date(selectedWorkshop.date).toLocaleDateString('ru-RU')}`}
+                    currentExecutors={selectedWorkshop.executors?.map(executorItem => {
+                        const executor = executorItem.executor || executorItem;
+                        return {
+                            id: executor.id,
+                            firstName: executor.firstName,
+                            lastName: executor.lastName,
+                            email: executor.email,
+                            phone: executor.phone,
+                            isPrimary: executorItem.isPrimary
+                        };
+                    }) || []}
+                    onExecutorsAssigned={handleAssignExecutorsSuccess}
+                />
+            )}
         </Box>
     );
 };

@@ -24,7 +24,7 @@ import {
 import { Close, Delete } from '@mui/icons-material';
 import type { AppDispatch } from '../../store';
 import { deleteUser } from '../../store/usersSlice';
-import type { User } from '../../store/usersSlice';
+import type { User } from '../../types';
 
 interface UserDetailsProps {
     userId: number;
@@ -37,6 +37,8 @@ const UserDetails: React.FC<UserDetailsProps> = ({ userId, onClose }) => {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [isDeleting, setIsDeleting] = useState(false);
+    const [schoolName, setSchoolName] = useState<string>('');
+    const [className, setClassName] = useState<string>('');
 
     useEffect(() => {
         const loadUser = async () => {
@@ -49,10 +51,38 @@ const UserDetails: React.FC<UserDetailsProps> = ({ userId, onClose }) => {
                 }
                 const data = await response.json();
                 setUser(data.user);
+
+                // Загружаем названия школы и класса
+                if (data.user.school && data.user.grade) {
+                    await loadSchoolAndClassNames(data.user.school, data.user.grade);
+                }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
             } finally {
                 setIsLoading(false);
+            }
+        };
+
+        const loadSchoolAndClassNames = async (schoolId: string, classId: string) => {
+            try {
+                // Загружаем школу
+                const schoolResponse = await fetch(`http://localhost:3001/api/schools/${schoolId}`);
+                if (schoolResponse.ok) {
+                    const schoolData = await schoolResponse.json();
+                    setSchoolName(schoolData.school.name);
+                }
+
+                // Загружаем класс
+                const classResponse = await fetch(`http://localhost:3001/api/schools/${schoolId}/classes`);
+                if (classResponse.ok) {
+                    const classData = await classResponse.json();
+                    const classItem = classData.classes.find((cls: { id: number; name: string }) => cls.id === parseInt(classId));
+                    if (classItem) {
+                        setClassName(classItem.name);
+                    }
+                }
+            } catch (err) {
+                console.error('Ошибка загрузки названий школы и класса:', err);
             }
         };
 
@@ -180,7 +210,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({ userId, onClose }) => {
                                     Школа
                                 </Typography>
                                 <Typography variant="body1">
-                                    {user.school?.name || 'Не указана'}
+                                    {schoolName || (user.school ? `Школа №${user.school}` : 'Не указана')}
                                 </Typography>
                             </Box>
 
@@ -189,7 +219,7 @@ const UserDetails: React.FC<UserDetailsProps> = ({ userId, onClose }) => {
                                     Класс
                                 </Typography>
                                 <Typography variant="body1">
-                                    {user.class?.name || 'Не указан'}
+                                    {className || (user.grade ? `${user.grade} класс` : 'Не указан')}
                                 </Typography>
                             </Box>
                         </Box>

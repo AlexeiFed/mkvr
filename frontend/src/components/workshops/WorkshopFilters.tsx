@@ -5,9 +5,8 @@
  * @created: 2024-12-19
  */
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { useEffect } from 'react';
 import { fetchSchoolClasses } from '../../store/schoolsSlice';
 import {
     Box,
@@ -24,12 +23,14 @@ import type { AppDispatch } from '../../store';
 interface WorkshopFiltersProps {
     filters: {
         date: string | null;
+        city: string | null;
         schoolId: string | null;
         classId: string | null;
         serviceId: string | null;
     };
     onFilterChange: (filters: Partial<{
         date: string | null;
+        city: string | null;
         schoolId: string | null;
         classId: string | null;
         serviceId: string | null;
@@ -41,6 +42,34 @@ const WorkshopFilters: React.FC<WorkshopFiltersProps> = ({ filters, onFilterChan
     const { services } = useSelector((state: RootState) => state.services);
     const dispatch = useDispatch<AppDispatch>();
     const { classes } = useSelector((state: RootState) => state.schools);
+
+    const [cities, setCities] = useState<string[]>([]);
+    const [filteredSchools, setFilteredSchools] = useState<typeof schools>([]);
+
+    // Загружаем список городов
+    useEffect(() => {
+        fetch('http://localhost:3001/api/schools/cities')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.cities) {
+                    setCities(data.cities);
+                }
+            })
+            .catch(err => console.error('Ошибка загрузки городов:', err));
+    }, []);
+
+    // Фильтруем школы по выбранному городу
+    useEffect(() => {
+        if (filters.city) {
+            const filtered = schools.filter(school => {
+                const city = school.address.split(',')[0]?.trim() || '';
+                return city === filters.city;
+            });
+            setFilteredSchools(filtered);
+        } else {
+            setFilteredSchools(schools);
+        }
+    }, [schools, filters.city]);
 
     // Подгружаем классы при изменении фильтра "Школа"
     useEffect(() => {
@@ -62,6 +91,7 @@ const WorkshopFilters: React.FC<WorkshopFiltersProps> = ({ filters, onFilterChan
     const handleClearFilters = () => {
         onFilterChange({
             date: null,
+            city: null,
             schoolId: null,
             classId: null,
             serviceId: null,
@@ -69,7 +99,7 @@ const WorkshopFilters: React.FC<WorkshopFiltersProps> = ({ filters, onFilterChan
     };
 
     return (
-        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(5, 1fr)' }, gap: 2, alignItems: 'center' }}>
+        <Box sx={{ display: 'grid', gridTemplateColumns: { xs: '1fr', sm: 'repeat(2, 1fr)', md: 'repeat(6, 1fr)' }, gap: 2, alignItems: 'center' }}>
             <TextField
                 fullWidth
                 type="date"
@@ -81,14 +111,33 @@ const WorkshopFilters: React.FC<WorkshopFiltersProps> = ({ filters, onFilterChan
 
             <FormControl fullWidth>
                 <Autocomplete
-                    options={schools}
+                    options={cities}
+                    value={filters.city || ''}
+                    onChange={(_, value) => onFilterChange({
+                        city: value || null,
+                        schoolId: null,
+                        classId: null
+                    })}
+                    renderInput={(params) => (
+                        <TextField {...params} label="Город" fullWidth />
+                    )}
+                />
+            </FormControl>
+
+            <FormControl fullWidth>
+                <Autocomplete
+                    options={filteredSchools}
                     getOptionLabel={(option) => option.name || ''}
-                    value={schools.find(s => String(s.id) === String(filters.schoolId)) || null}
-                    onChange={(_, value) => onFilterChange({ schoolId: value ? String(value.id) : null, classId: null })}
+                    value={filteredSchools.find(s => String(s.id) === String(filters.schoolId)) || null}
+                    onChange={(_, value) => onFilterChange({
+                        schoolId: value ? String(value.id) : null,
+                        classId: null
+                    })}
                     renderInput={(params) => (
                         <TextField {...params} label="Школа" fullWidth />
                     )}
                     isOptionEqualToValue={(option, value) => String(option.id) === String(value.id)}
+                    disabled={!filters.city}
                 />
             </FormControl>
 
@@ -96,7 +145,7 @@ const WorkshopFilters: React.FC<WorkshopFiltersProps> = ({ filters, onFilterChan
                 <Autocomplete
                     options={filters.schoolId ? sortedClasses : []}
                     getOptionLabel={(option) => option.name || ''}
-                    value={classes.find(c => String(c.id) === String(filters.classId)) || null}
+                    value={sortedClasses.find(c => String(c.id) === String(filters.classId)) || null}
                     onChange={(_, value) => onFilterChange({ classId: value ? String(value.id) : null })}
                     renderInput={(params) => (
                         <TextField {...params} label="Класс" fullWidth />

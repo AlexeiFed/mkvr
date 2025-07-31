@@ -26,6 +26,9 @@ const ChatContainer: React.FC = () => {
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
 
+    // Дополнительная проверка для мобильных устройств
+    const isMobileDevice = isMobile || window.innerWidth <= 768;
+
     useEffect(() => {
         // Загружаем чаты при монтировании
         dispatch(fetchConversations());
@@ -37,19 +40,10 @@ const ChatContainer: React.FC = () => {
         });
         setSocket(newSocket);
 
-        // Слушаем новые сообщения
+        // Слушаем только новые сообщения, не обновляем список чатов
         newSocket.on('chat:message', (data: { chatId: number; message: Message }) => {
             console.log('Получено новое сообщение через WebSocket:', data);
             dispatch(addMessage(data.message));
-
-            // Обновляем только список чатов, но не перезагружаем сообщения текущего чата
-            dispatch(fetchConversations());
-        });
-
-        // Слушаем обновления чатов
-        newSocket.on('chat:updated', () => {
-            console.log('Чат обновлен, обновляем список чатов');
-            dispatch(fetchConversations());
         });
 
         return () => {
@@ -57,28 +51,7 @@ const ChatContainer: React.FC = () => {
         };
     }, [dispatch]);
 
-    // Обработка фокуса окна и видимости страницы для обновления данных при переключении вкладок
-    useEffect(() => {
-        const handleFocus = () => {
-            console.log('Окно получило фокус, обновляем список чатов');
-            dispatch(fetchConversations());
-        };
-
-        const handleVisibilityChange = () => {
-            if (!document.hidden) {
-                console.log('Страница стала видимой, обновляем список чатов');
-                dispatch(fetchConversations());
-            }
-        };
-
-        window.addEventListener('focus', handleFocus);
-        document.addEventListener('visibilitychange', handleVisibilityChange);
-
-        return () => {
-            window.removeEventListener('focus', handleFocus);
-            document.removeEventListener('visibilitychange', handleVisibilityChange);
-        };
-    }, [dispatch]);
+    // Убираем обработчики фокуса и видимости, которые вызывают перезагрузку
 
     if (isLoading) {
         return (
@@ -112,7 +85,7 @@ const ChatContainer: React.FC = () => {
     const isChild = user?.role === 'child';
 
     // Показываем мобильную версию на мобильных устройствах
-    if (isMobile) {
+    if (isMobileDevice) {
         return (
             <MobileChatView
                 conversations={conversations}
@@ -124,46 +97,55 @@ const ChatContainer: React.FC = () => {
 
     return (
         <Box sx={{
-            height: isChild ? 'calc(100vh - 120px)' : 'calc(100vh - 100px)',
+            height: isMobile ? '100vh' : (isChild ? 'calc(100vh - 120px)' : 'calc(100vh - 100px)'),
             display: 'flex',
             flexDirection: 'column',
             background: isChild ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' : 'transparent',
-            borderRadius: isChild ? 2 : 0,
-            margin: isChild ? 2 : 0,
-            overflow: 'hidden'
+            borderRadius: isChild && !isMobile ? 2 : 0,
+            margin: isChild && !isMobile ? 2 : 0,
+            overflow: 'hidden',
+            maxHeight: isMobile ? '100vh' : 'none', // Ограничиваем высоту на мобильных
+            position: 'relative' // Относительное позиционирование
         }}>
-            <Box sx={{
-                p: 2,
-                borderBottom: isChild ? '2px solid rgba(255, 255, 255, 0.2)' : 1,
-                borderColor: isChild ? 'transparent' : 'divider',
-                background: isChild ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                backdropFilter: isChild ? 'blur(10px)' : 'none'
-            }}>
-                <Typography
-                    variant="h5"
-                    gutterBottom
-                    sx={{
-                        fontFamily: isChild ? '"Fredoka One", Arial, sans-serif' : 'inherit',
-                        color: isChild ? '#fff' : 'inherit',
-                        textAlign: isChild ? 'center' : 'left'
-                    }}
-                >
-                    {isChild ? '💬 Чат с администратором' : '💬 Чат с пользователями'}
-                </Typography>
-                <PushNotificationSetup />
-            </Box>
-
-            <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+            {/* Заголовок - только для десктопа */}
+            {!isMobile && (
                 <Box sx={{
-                    width: 300,
-                    borderRight: isChild ? '2px solid rgba(255, 255, 255, 0.2)' : 1,
+                    p: 2,
+                    borderBottom: isChild ? '2px solid rgba(255, 255, 255, 0.2)' : 1,
                     borderColor: isChild ? 'transparent' : 'divider',
-                    background: isChild ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                    background: isChild ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
                     backdropFilter: isChild ? 'blur(10px)' : 'none'
                 }}>
-                    <ChatList conversations={conversations} currentChat={currentChat} />
+                    <Typography
+                        variant="h5"
+                        gutterBottom
+                        sx={{
+                            fontFamily: isChild ? '"Fredoka One", Arial, sans-serif' : 'inherit',
+                            color: isChild ? '#fff' : 'inherit',
+                            textAlign: isChild ? 'center' : 'left'
+                        }}
+                    >
+                        {isChild ? '💬 Чат с администратором' : '💬 Чат с пользователями'}
+                    </Typography>
+                    <PushNotificationSetup />
                 </Box>
+            )}
 
+            <Box sx={{ flex: 1, display: 'flex', overflow: 'hidden' }}>
+                {/* Список чатов - только для десктопа */}
+                {!isMobile && (
+                    <Box sx={{
+                        width: 300,
+                        borderRight: isChild ? '2px solid rgba(255, 255, 255, 0.2)' : 1,
+                        borderColor: isChild ? 'transparent' : 'divider',
+                        background: isChild ? 'rgba(255, 255, 255, 0.05)' : 'transparent',
+                        backdropFilter: isChild ? 'blur(10px)' : 'none'
+                    }}>
+                        <ChatList conversations={conversations} currentChat={currentChat} />
+                    </Box>
+                )}
+
+                {/* Область чата */}
                 <Box sx={{
                     flex: 1,
                     background: isChild ? 'rgba(255, 255, 255, 0.05)' : 'transparent',

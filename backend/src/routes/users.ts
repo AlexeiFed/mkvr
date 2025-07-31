@@ -14,11 +14,13 @@ const prisma = new PrismaClient();
 // Получить всех пользователей с фильтрами
 router.get('/', async (req: Request, res: Response) => {
     try {
-        const { schoolId, classId, role, page = 1, pageSize = 20 } = req.query;
+        const { school, grade, city, role, page = 1, pageSize = 20 } = req.query;
         const where: any = {};
-        if (schoolId) where.schoolId = Number(schoolId);
-        if (classId) where.classId = Number(classId);
         if (role) where.role = role;
+        // Убираем фильтры по строковым полям, так как будем фильтровать по связям
+        // if (school) where.school = { contains: String(school), mode: 'insensitive' };
+        // if (grade) where.grade = { contains: String(grade), mode: 'insensitive' };
+        // Убираем фильтр по city пользователя, так как будем фильтровать по городу школы
 
         const skip = (Number(page) - 1) * Number(pageSize);
         const users = await prisma.user.findMany({
@@ -26,9 +28,89 @@ router.get('/', async (req: Request, res: Response) => {
             skip,
             take: Number(pageSize),
             orderBy: { createdAt: 'desc' },
+            select: {
+                id: true,
+                email: true,
+                firstName: true,
+                lastName: true,
+                role: true,
+                phone: true,
+                city: true,
+                school: true,
+                grade: true,
+                shift: true,
+                age: true,
+                createdAt: true,
+                updatedAt: true,
+                // Получаем актуальные данные через мастер-классы
+                ordersAsChild: {
+                    select: {
+                        workshop: {
+                            select: {
+                                school: {
+                                    select: {
+                                        id: true,
+                                        name: true,
+                                        address: true
+                                    }
+                                },
+                                class: {
+                                    select: {
+                                        id: true,
+                                        name: true
+                                    }
+                                }
+                            }
+                        }
+                    },
+                    orderBy: {
+                        createdAt: 'desc'
+                    },
+                    take: 1
+                }
+            }
         });
-        const total = await prisma.user.count({ where });
-        res.json({ users, total });
+
+        // Обрабатываем данные, чтобы показать актуальную школу и класс
+        let processedUsers = users.map(user => {
+            const latestOrder = user.ordersAsChild[0];
+            const actualSchool = latestOrder?.workshop?.school?.name || user.school;
+            const actualGrade = latestOrder?.workshop?.class?.name || user.grade;
+
+            return {
+                ...user,
+                school: actualSchool,
+                grade: actualGrade,
+                schoolId: latestOrder?.workshop?.school?.id || null,
+                classId: latestOrder?.workshop?.class?.id || null,
+                schoolAddress: latestOrder?.workshop?.school?.address || null,
+                ordersAsChild: undefined // Убираем из ответа
+            };
+        });
+
+        // Фильтруем по школе, если указан фильтр
+        if (school) {
+            const schoolId = Number(school);
+            processedUsers = processedUsers.filter(user => user.schoolId === schoolId);
+        }
+
+        // Фильтруем по классу, если указан фильтр
+        if (grade) {
+            const classId = Number(grade);
+            processedUsers = processedUsers.filter(user => user.classId === classId);
+        }
+
+        // Фильтруем по городу из адреса школы, если указан фильтр
+        if (city) {
+            processedUsers = processedUsers.filter(user => {
+                if (!user.schoolAddress) return false;
+                const schoolCity = user.schoolAddress.split(',')[0]?.trim();
+                return schoolCity && schoolCity.toLowerCase().includes(String(city).toLowerCase());
+            });
+        }
+
+        const total = processedUsers.length; // Используем количество отфильтрованных пользователей
+        res.json({ users: processedUsers, total });
     } catch (error) {
         console.error('Ошибка получения пользователей:', error);
         res.status(500).json({ error: 'Ошибка получения пользователей' });
@@ -56,7 +138,21 @@ router.delete('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params['id']);
         if (isNaN(id)) return res.status(400).json({ error: 'Некорректный ID' });
+
+        // Получаем информацию о пользователе перед удалением
+        const user = await prisma.user.findUnique({
+            where: { id },
+            select: { id: true, firstName: true, lastName: true }
+        });
+
         await prisma.user.delete({ where: { id } });
+
+        // Отправляем WebSocket событие о удалении пользователя
+        if (req.app.get('io')) {
+            const io = req.app.get('io');
+            io.emit('user:deleted', { userId: id, user });
+        }
+
         return res.json({ success: true });
     } catch (error) {
         console.error('Ошибка удаления пользователя:', error);

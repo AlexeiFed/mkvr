@@ -31,14 +31,15 @@ import {
     Button
 } from '@mui/material';
 import { Visibility, Delete } from '@mui/icons-material';
-import type { User } from '../../store/usersSlice';
+import type { User } from '../../types';
 
 interface UsersListProps {
     users: User[];
     total: number;
     filters: {
-        schoolId?: number;
-        classId?: number;
+        school?: string;
+        grade?: string;
+        city?: string;
         role?: string;
         page: number;
         pageSize: number;
@@ -60,21 +61,41 @@ const UsersList: React.FC<UsersListProps> = ({
     onUserSelect,
     onUserDelete
 }) => {
-    const [schools, setSchools] = useState<Array<{ id: number; name: string }>>([]);
-    const [classes, setClasses] = useState<Array<{ id: number; name: string }>>([]);
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [userToDelete, setUserToDelete] = useState<User | null>(null);
+    const [cities, setCities] = useState<string[]>([]);
+    const [schools, setSchools] = useState<Array<{ id: number, name: string, address: string }>>([]);
+    const [classes, setClasses] = useState<Array<{ id: number, name: string, school: { id: number, name: string } }>>([]);
 
     useEffect(() => {
-        // Загрузка школ и классов для фильтров
-        fetch('http://localhost:3001/api/schools')
+        // Загрузка городов из API
+        fetch('http://localhost:3001/api/schools/cities')
             .then(res => res.json())
-            .then(data => setSchools(data.schools || []))
+            .then(data => {
+                if (data.success && data.cities) {
+                    setCities(data.cities);
+                }
+            })
+            .catch(err => console.error('Ошибка загрузки городов:', err));
+
+        // Загрузка школ из API
+        fetch('http://localhost:3001/api/schools/list')
+            .then(res => res.json())
+            .then(data => {
+                if (data.success && data.schools) {
+                    setSchools(data.schools);
+                }
+            })
             .catch(err => console.error('Ошибка загрузки школ:', err));
 
-        fetch('http://localhost:3001/api/classes')
+        // Загрузка классов из API
+        fetch('http://localhost:3001/api/schools/classes')
             .then(res => res.json())
-            .then(data => setClasses(data.classes || []))
+            .then(data => {
+                if (data.success && data.classes) {
+                    setClasses(data.classes);
+                }
+            })
             .catch(err => console.error('Ошибка загрузки классов:', err));
     }, []);
 
@@ -133,34 +154,57 @@ const UsersList: React.FC<UsersListProps> = ({
             {/* Фильтры */}
             <Box sx={{ mb: 3, display: 'flex', gap: 2, flexWrap: 'wrap' }}>
                 <FormControl sx={{ minWidth: 200 }}>
+                    <InputLabel>Город</InputLabel>
+                    <Select
+                        value={filters.city || ''}
+                        onChange={(e) => {
+                            handleFilterChange('city', e.target.value || undefined);
+                            handleFilterChange('school', undefined);
+                            handleFilterChange('grade', undefined);
+                        }}
+                        label="Город"
+                    >
+                        <MenuItem value="">Все города</MenuItem>
+                        {cities.map(city => (
+                            <MenuItem key={city} value={city}>{city}</MenuItem>
+                        ))}
+                    </Select>
+                </FormControl>
+
+                <FormControl sx={{ minWidth: 200 }}>
                     <InputLabel>Школа</InputLabel>
                     <Select
-                        value={filters.schoolId || ''}
-                        onChange={(e) => handleFilterChange('schoolId', e.target.value || undefined)}
+                        value={filters.school || ''}
+                        onChange={(e) => {
+                            handleFilterChange('school', e.target.value || undefined);
+                            handleFilterChange('grade', undefined);
+                        }}
                         label="Школа"
+                        disabled={!filters.city}
                     >
                         <MenuItem value="">Все школы</MenuItem>
-                        {schools.map(school => (
-                            <MenuItem key={school.id} value={school.id}>
-                                {school.name}
-                            </MenuItem>
-                        ))}
+                        {schools
+                            .filter(school => !filters.city || school.address?.split(',')[0]?.trim() === filters.city)
+                            .map(school => (
+                                <MenuItem key={school.id} value={school.id}>{school.name}</MenuItem>
+                            ))}
                     </Select>
                 </FormControl>
 
                 <FormControl sx={{ minWidth: 200 }}>
                     <InputLabel>Класс</InputLabel>
                     <Select
-                        value={filters.classId || ''}
-                        onChange={(e) => handleFilterChange('classId', e.target.value || undefined)}
+                        value={filters.grade || ''}
+                        onChange={(e) => handleFilterChange('grade', e.target.value || undefined)}
                         label="Класс"
+                        disabled={!filters.school}
                     >
                         <MenuItem value="">Все классы</MenuItem>
-                        {classes.map(cls => (
-                            <MenuItem key={cls.id} value={cls.id}>
-                                {cls.name}
-                            </MenuItem>
-                        ))}
+                        {classes
+                            .filter(cls => !filters.school || cls.school?.id === parseInt(filters.school))
+                            .map(cls => (
+                                <MenuItem key={cls.id} value={cls.id}>{cls.name}</MenuItem>
+                            ))}
                     </Select>
                 </FormControl>
 
@@ -207,8 +251,12 @@ const UsersList: React.FC<UsersListProps> = ({
                                         size="small"
                                     />
                                 </TableCell>
-                                <TableCell>{user.school?.name || '-'}</TableCell>
-                                <TableCell>{user.class?.name || '-'}</TableCell>
+                                <TableCell>
+                                    {user.school ? user.school : '-'}
+                                </TableCell>
+                                <TableCell>
+                                    {user.grade ? user.grade : '-'}
+                                </TableCell>
                                 <TableCell>
                                     {new Date(user.createdAt).toLocaleDateString('ru-RU')}
                                 </TableCell>

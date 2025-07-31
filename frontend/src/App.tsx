@@ -23,6 +23,8 @@ import WorkshopsContainer from './components/workshops/WorkshopsContainer';
 import WorkshopDetails from './components/workshops/WorkshopDetails';
 import UsersContainer from './components/users/UsersContainer';
 import ChatContainer from './components/chat/ChatContainer';
+import ExecutorDashboard from './components/executor/ExecutorDashboard';
+import ExecutorWorkshopDetails from './components/executor/ExecutorWorkshopDetails';
 
 // Компонент для перенаправления по ролям
 const RoleBasedRedirect: React.FC = () => {
@@ -143,12 +145,18 @@ const AppContent = () => {
         }
       />
 
-      {/* Панель исполнителя (будет реализована) */}
+      {/* Панель исполнителя */}
       <Route
         path="/executor/*"
         element={
           <ProtectedRoute allowedRoles={['executor']}>
-            <div>Панель исполнителя (будет реализована)</div>
+            <MainLayout>
+              <Routes>
+                <Route path="/" element={<ExecutorDashboard />} />
+                <Route path="/workshops/:id" element={<ExecutorWorkshopDetails />} />
+                <Route path="/profile/*" element={<div>Профиль (будет реализовано)</div>} />
+              </Routes>
+            </MainLayout>
           </ProtectedRoute>
         }
       />

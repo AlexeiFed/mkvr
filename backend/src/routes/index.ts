@@ -17,6 +17,7 @@ import subServicesRouter from './subServices';
 import uploadRouter from './upload';
 import workshopsRouter from './workshops';
 import chatRouter from './chat';
+import pushNotificationsRouter from './pushNotifications';
 
 const router = Router();
 
@@ -31,5 +32,6 @@ router.use('/subServices', subServicesRouter);
 router.use('/upload', uploadRouter);
 router.use('/workshops', workshopsRouter);
 router.use('/chat', chatRouter);
+router.use('/push-notifications', pushNotificationsRouter);
 
 export default router; 

@@ -25,6 +25,89 @@ router.get('/', async (_req: Request, res: Response) => {
     }
 });
 
+// Получить список школ для фильтра
+router.get('/list', async (_req: Request, res: Response) => {
+    try {
+        const schools = await prisma.school.findMany({
+            select: {
+                id: true,
+                name: true,
+                address: true
+            },
+            where: {
+                isActive: true
+            },
+            orderBy: {
+                name: 'asc'
+            }
+        });
+        return res.json({ success: true, schools });
+    } catch (error) {
+        console.error('Ошибка получения списка школ:', error);
+        return res.status(500).json({ success: false, error: 'Ошибка при получении списка школ' });
+    }
+});
+
+// Получить все города из адресов школ
+router.get('/cities', async (_req: Request, res: Response) => {
+    try {
+        const schools = await prisma.school.findMany({
+            select: {
+                address: true
+            },
+            where: {
+                isActive: true
+            }
+        });
+
+        // Извлекаем города из адресов (до первой запятой)
+        const cities = schools
+            .map((school: { address: string }) => {
+                const city = school.address.split(',')[0]?.trim() || '';
+                return city;
+            })
+            .filter((city: string, index: number, arr: string[]) => arr.indexOf(city) === index) // Убираем дубликаты
+            .sort(); // Сортируем по алфавиту
+
+        return res.json({ success: true, cities });
+    } catch (error) {
+        console.error('Ошибка получения городов:', error);
+        return res.status(500).json({ success: false, error: 'Ошибка при получении городов' });
+    }
+});
+
+// Получить список классов для фильтра
+router.get('/classes', async (_req: Request, res: Response) => {
+    try {
+        const classes = await prisma.class.findMany({
+            select: {
+                id: true,
+                name: true,
+                school: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                }
+            },
+            orderBy: [
+                {
+                    school: {
+                        name: 'asc'
+                    }
+                },
+                {
+                    name: 'asc'
+                }
+            ]
+        });
+        return res.json({ success: true, classes });
+    } catch (error) {
+        console.error('Ошибка получения списка классов:', error);
+        return res.status(500).json({ success: false, error: 'Ошибка при получении списка классов' });
+    }
+});
+
 // Получить школу по id с классами
 router.get('/:id', async (req: Request, res: Response) => {
     try {
@@ -157,5 +240,7 @@ router.get('/:id/shifts', async (req: Request, res: Response) => {
         return res.status(500).json({ success: false, error: 'Ошибка при получении смен' });
     }
 });
+
+
 
 export default router; 

@@ -14,10 +14,12 @@ export interface User {
     firstName: string;
     lastName: string;
     role: string;
-    schoolId?: number;
-    classId?: number;
-    school?: { id: number; name: string } | null;
-    class?: { id: number; name: string } | null;
+    phone?: string;
+    city?: string;
+    school?: string;
+    grade?: string;
+    shift?: string;
+    age?: number;
     createdAt: string;
     updatedAt: string;
 }
@@ -29,8 +31,9 @@ export interface UsersState {
     isLoading: boolean;
     error: string | null;
     filters: {
-        schoolId?: number;
-        classId?: number;
+        school?: string;
+        grade?: string;
+        city?: string;
         role?: string;
         page: number;
         pageSize: number;

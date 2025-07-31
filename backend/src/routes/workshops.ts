@@ -9,6 +9,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authenticateToken, requireRole } from '../middleware/auth';
 import { io } from '../index';
+import { PushNotificationService } from '../services/pushNotification';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -163,7 +164,7 @@ router.get('/child', authenticateToken, requireRole(['child']), async (req: Requ
 // GET /api/workshops - Получить все мастер-классы с фильтрацией
 router.get('/', authenticateToken, requireRole(['admin', 'executor']), async (req: Request, res: Response) => {
     try {
-        const { date, schoolId, status } = req.query;
+        const { date, city, schoolId, classId, serviceId, status } = req.query;
 
         const where: any = {};
 
@@ -176,9 +177,28 @@ router.get('/', authenticateToken, requireRole(['admin', 'executor']), async (re
             };
         }
 
+        // Фильтр по городу
+        if (city) {
+            where.school = {
+                address: {
+                    startsWith: city as string
+                }
+            };
+        }
+
         // Фильтр по школе
         if (schoolId) {
             where.schoolId = parseInt(schoolId as string);
+        }
+
+        // Фильтр по классу
+        if (classId) {
+            where.classId = parseInt(classId as string);
+        }
+
+        // Фильтр по услуге
+        if (serviceId) {
+            where.serviceId = parseInt(serviceId as string);
         }
 
         // Фильтр по статусу
@@ -212,6 +232,19 @@ router.get('/', authenticateToken, requireRole(['admin', 'executor']), async (re
                         id: true,
                         firstName: true,
                         lastName: true,
+                    }
+                },
+                executors: {
+                    include: {
+                        executor: {
+                            select: {
+                                id: true,
+                                firstName: true,
+                                lastName: true,
+                                email: true,
+                                phone: true,
+                            }
+                        }
                     }
                 }
             },
@@ -311,6 +344,8 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'executor']), async 
                     select: {
                         id: true,
                         name: true,
+                        teacher: true,
+                        phone: true,
                     }
                 },
                 executor: {
@@ -318,6 +353,19 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'executor']), async 
                         id: true,
                         firstName: true,
                         lastName: true,
+                    }
+                },
+                executors: {
+                    include: {
+                        executor: {
+                            select: {
+                                id: true,
+                                firstName: true,
+                                lastName: true,
+                                email: true,
+                                phone: true,
+                            }
+                        }
                     }
                 }
             }
@@ -362,7 +410,8 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'executor']), async 
                 },
                 orderComplectations: {
                     include: {
-                        subService: true
+                        subService: true,
+                        variant: true
                     }
                 }
             }
@@ -401,6 +450,92 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'executor']), async 
         return res.status(500).json({
             success: false,
             error: 'Ошибка при получении мастер-класса'
+        });
+    }
+});
+
+// PUT /api/workshops/:id - Обновить мастер-класс
+router.put('/:id', authenticateToken, requireRole(['admin', 'executor']), async (req: Request, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { executor, phone, notes } = req.body;
+
+        if (!id) {
+            return res.status(400).json({
+                success: false,
+                error: 'ID мастер-класса обязателен'
+            });
+        }
+
+        const workshopId = parseInt(id);
+        if (isNaN(workshopId)) {
+            return res.status(400).json({
+                success: false,
+                error: 'Некорректный ID мастер-класса'
+            });
+        }
+
+        // Проверяем существование мастер-класса
+        const existingWorkshop = await prisma.workshop.findUnique({
+            where: { id: workshopId }
+        });
+
+        if (!existingWorkshop) {
+            return res.status(404).json({
+                success: false,
+                error: 'Мастер-класс не найден'
+            });
+        }
+
+        // Обновляем мастер-класс
+        const updatedWorkshop = await prisma.workshop.update({
+            where: { id: workshopId },
+            data: {
+                // executor и phone сохраняем в notes как JSON
+                notes: JSON.stringify({
+                    executor: executor || null,
+                    phone: phone || null,
+                    notes: notes || null
+                })
+            },
+            include: {
+                service: {
+                    select: {
+                        id: true,
+                        name: true,
+                    }
+                },
+                school: {
+                    select: {
+                        id: true,
+                        name: true,
+                    }
+                },
+                class: {
+                    select: {
+                        id: true,
+                        name: true,
+                    }
+                },
+                executor: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                    }
+                }
+            }
+        });
+
+        return res.json({
+            success: true,
+            workshop: updatedWorkshop
+        });
+    } catch (error) {
+        console.error('Ошибка обновления мастер-класса:', error);
+        return res.status(500).json({
+            success: false,
+            error: 'Ошибка при обновлении мастер-класса'
         });
     }
 });
@@ -749,10 +884,19 @@ router.patch('/:id/update-payment', authenticateToken, requireRole(['admin', 'ex
 });
 
 // GET /api/workshops/statistics - Получить статистику мастер-классов
-router.get('/statistics', authenticateToken, requireRole(['admin', 'executor']), async (_req: Request, res: Response) => {
+router.get('/statistics', authenticateToken, requireRole(['admin', 'executor']), async (req: Request, res: Response) => {
+    console.log('=== НАЧАЛО ОБРАБОТКИ СТАТИСТИКИ ===');
+    console.log('URL:', req.url);
+    console.log('Method:', req.method);
+    console.log('Headers:', req.headers);
+    console.log('User:', req.user);
+
     try {
+        console.log('Получен запрос статистики от пользователя:', req.user?.id);
+
         // Общее количество мастер-классов
         const total = await prisma.workshop.count();
+        console.log('Общее количество мастер-классов:', total);
 
         // Завершенные мастер-классы (прошедшие даты)
         const completed = await prisma.workshop.count({
@@ -762,6 +906,7 @@ router.get('/statistics', authenticateToken, requireRole(['admin', 'executor']),
                 }
             }
         });
+        console.log('Завершенные мастер-классы:', completed);
 
         // Запланированные мастер-классы (будущие даты)
         const upcoming = await prisma.workshop.count({
@@ -771,6 +916,7 @@ router.get('/statistics', authenticateToken, requireRole(['admin', 'executor']),
                 }
             }
         });
+        console.log('Запланированные мастер-классы:', upcoming);
 
         // Общая выручка
         const orders = await prisma.order.findMany({
@@ -781,8 +927,10 @@ router.get('/statistics', authenticateToken, requireRole(['admin', 'executor']),
                 amount: true
             }
         });
+        console.log('Найдено оплаченных заказов:', orders.length);
 
         const totalRevenue = orders.reduce((sum, order) => sum + order.amount, 0);
+        console.log('Общая выручка:', totalRevenue);
 
         const statistics = {
             total,
@@ -791,10 +939,258 @@ router.get('/statistics', authenticateToken, requireRole(['admin', 'executor']),
             totalRevenue
         };
 
+        console.log('Статистика успешно сформирована:', statistics);
         return res.json({ success: true, statistics });
     } catch (error) {
         console.error('Ошибка статистики мастер-классов:', error);
+        console.error('Стек ошибки:', error instanceof Error ? error.stack : 'Неизвестная ошибка');
+
+        // Проверяем тип ошибки
+        if (error instanceof Error) {
+            console.error('Тип ошибки: Error');
+            console.error('Сообщение ошибки:', error.message);
+            console.error('Имя ошибки:', error.name);
+        } else {
+            console.error('Тип ошибки:', typeof error);
+            console.error('Значение ошибки:', error);
+        }
+
         return res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+    }
+});
+
+// Назначить исполнителей к мастер-классу
+router.post('/:id/executors', authenticateToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { executorIds } = req.body;
+
+        if (!executorIds || !Array.isArray(executorIds)) {
+            return res.status(400).json({ error: 'executorIds должен быть массивом' });
+        }
+
+        if (!id) {
+            return res.status(400).json({ error: 'ID мастер-класса не указан' });
+        }
+
+        const workshop = await prisma.workshop.findUnique({
+            where: { id: parseInt(id) }
+        });
+
+        if (!workshop) {
+            return res.status(404).json({ error: 'Мастер-класс не найден' });
+        }
+
+        // Удаляем существующих исполнителей
+        await prisma.workshopExecutor.deleteMany({
+            where: { workshopId: parseInt(id) }
+        });
+
+        // Добавляем новых исполнителей
+        const workshopExecutors = [];
+        for (let i = 0; i < executorIds.length; i++) {
+            const executorId = executorIds[i];
+            const workshopExecutor = await prisma.workshopExecutor.create({
+                data: {
+                    workshopId: parseInt(id),
+                    executorId,
+                    isPrimary: i === 0 // первый исполнитель становится основным
+                }
+            });
+            workshopExecutors.push(workshopExecutor);
+        }
+
+        // Обновляем основного исполнителя в мастер-классе
+        if (executorIds.length > 0) {
+            await prisma.workshop.update({
+                where: { id: parseInt(id) },
+                data: { executorId: executorIds[0] }
+            });
+        }
+
+        // Отправляем push-уведомления исполнителям
+        const workshopData = await prisma.workshop.findUnique({
+            where: { id: parseInt(id) },
+            include: { service: true }
+        });
+
+        for (const executorId of executorIds) {
+            try {
+                await PushNotificationService.sendWorkshopAssignmentNotification(
+                    executorId,
+                    parseInt(id),
+                    workshopData?.service?.name || 'Мастер-класс',
+                    workshopData?.date || new Date()
+                );
+            } catch (error) {
+                console.error(`Ошибка отправки уведомления исполнителю ${executorId}:`, error);
+            }
+        }
+
+        return res.json({ message: 'Исполнители назначены успешно', count: workshopExecutors.length });
+    } catch (error) {
+        console.error('Ошибка при назначении исполнителей:', error);
+        return res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Получить исполнителей мастер-класса
+router.get('/:id/executors', authenticateToken, requireRole(['admin', 'executor']), async (req, res) => {
+    try {
+        const { id } = req.params;
+
+        if (!id) {
+            return res.status(400).json({ error: 'ID мастер-класса не указан' });
+        }
+
+        const executors = await prisma.workshopExecutor.findMany({
+            where: { workshopId: parseInt(id) },
+            include: {
+                executor: {
+                    select: {
+                        id: true,
+                        firstName: true,
+                        lastName: true,
+                        email: true,
+                        phone: true
+                    }
+                }
+            },
+            orderBy: { isPrimary: 'desc' }
+        });
+
+        return res.json(executors);
+    } catch (error) {
+        console.error('Ошибка при получении исполнителей:', error);
+        return res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Удалить исполнителя из мастер-класса
+router.delete('/:id/executors/:executorId', authenticateToken, requireRole(['admin']), async (req, res) => {
+    try {
+        const { id, executorId } = req.params;
+
+        if (!id || !executorId) {
+            return res.status(400).json({ error: 'ID мастер-класса или исполнителя не указан' });
+        }
+
+        const workshopExecutor = await prisma.workshopExecutor.findFirst({
+            where: {
+                workshopId: parseInt(id),
+                executorId: parseInt(executorId)
+            }
+        });
+
+        if (!workshopExecutor) {
+            return res.status(404).json({ error: 'Исполнитель не найден в этом мастер-классе' });
+        }
+
+        await prisma.workshopExecutor.delete({
+            where: { id: workshopExecutor.id }
+        });
+
+        // Если удаляемый исполнитель был основным, назначаем нового
+        if (workshopExecutor.isPrimary) {
+            const nextExecutor = await prisma.workshopExecutor.findFirst({
+                where: { workshopId: parseInt(id) },
+                orderBy: { assignedAt: 'asc' }
+            });
+
+            if (nextExecutor) {
+                await prisma.workshopExecutor.update({
+                    where: { id: nextExecutor.id },
+                    data: { isPrimary: true }
+                });
+
+                await prisma.workshop.update({
+                    where: { id: parseInt(id) },
+                    data: { executorId: nextExecutor.executorId }
+                });
+            } else {
+                // Если исполнителей больше нет, очищаем основного исполнителя
+                await prisma.workshop.update({
+                    where: { id: parseInt(id) },
+                    data: { executorId: null }
+                });
+            }
+        }
+
+        return res.json({ message: 'Исполнитель удален из мастер-класса' });
+    } catch (error) {
+        console.error('Ошибка при удалении исполнителя:', error);
+        return res.status(500).json({ error: 'Ошибка сервера' });
+    }
+});
+
+// Получить мастер-классы исполнителя
+router.get('/executor/my-workshops', authenticateToken, requireRole(['executor']), async (req, res) => {
+    try {
+        const userId = req.user!.id;
+
+        const workshopExecutors = await prisma.workshopExecutor.findMany({
+            where: { executorId: userId },
+            include: {
+                workshop: {
+                    include: {
+                        service: true,
+                        school: true,
+                        class: true,
+                        orders: {
+                            include: {
+                                child: {
+                                    select: {
+                                        id: true,
+                                        firstName: true,
+                                        lastName: true,
+                                        age: true
+                                    }
+                                },
+                                parent: {
+                                    select: {
+                                        id: true,
+                                        firstName: true,
+                                        lastName: true,
+                                        phone: true
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            orderBy: { workshop: { date: 'asc' } }
+        });
+
+        // Подсчитываем статистику для каждого мастер-класса
+        const workshopsWithStats = workshopExecutors.map(workshopExecutor => {
+            const workshop = workshopExecutor.workshop;
+            const orders = workshop.orders || [];
+
+            const totalParticipants = orders.length;
+            const paidParticipants = orders.filter(order => order.paymentStatus === 'paid').length;
+            const totalAmount = orders.reduce((sum, order) => sum + order.amount, 0);
+            const paidAmount = orders
+                .filter(order => order.paymentStatus === 'paid')
+                .reduce((sum, order) => sum + order.amount, 0);
+
+            return {
+                ...workshopExecutor,
+                workshop: {
+                    ...workshop,
+                    totalParticipants,
+                    paidParticipants,
+                    totalAmount,
+                    paidAmount,
+                    orders
+                }
+            };
+        });
+
+        res.json(workshopsWithStats);
+    } catch (error) {
+        console.error('Ошибка при получении мастер-классов исполнителя:', error);
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 

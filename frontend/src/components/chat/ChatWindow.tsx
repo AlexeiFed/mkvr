@@ -5,7 +5,7 @@
  * @created: 2025-01-12
  */
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import {
     Box,
@@ -24,6 +24,7 @@ import type { Chat } from '../../types';
 import type { RootState } from '../../store';
 import type { AppDispatch } from '../../store';
 import { sendMessage } from '../../store/chatSlice';
+import { saveScrollPosition } from '../../store/chatSlice';
 
 interface ChatWindowProps {
     chat: Chat;
@@ -32,20 +33,67 @@ interface ChatWindowProps {
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
     const dispatch = useDispatch<AppDispatch>();
-    const { user } = useSelector((state: RootState) => state.auth);
     const { messages } = useSelector((state: RootState) => state.chat);
+    const user = useSelector((state: RootState) => state.auth.user);
     const [newMessage, setNewMessage] = useState('');
     const [isSending, setIsSending] = useState(false);
     const messagesEndRef = useRef<HTMLDivElement>(null);
+    const messagesContainerRef = useRef<HTMLDivElement>(null);
+    const scrollPositions = useSelector((state: RootState) => state.chat.scrollPositions);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
+    const isChild = user?.role === 'child';
 
     const chatMessages = messages[chat.id] || [];
 
+    // Сохраняем позицию скролла при изменении чата
     useEffect(() => {
-        // Прокручиваем к последнему сообщению
-        messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    }, [chatMessages]);
+        if (chat && messagesContainerRef.current) {
+            const savedPosition = scrollPositions[chat.id];
+            if (savedPosition !== undefined) {
+                console.log('ChatWindow: восстанавливаем позицию скролла для чата', chat.id, 'позиция:', savedPosition);
+                messagesContainerRef.current.scrollTop = savedPosition;
+            }
+        }
+    }, [chat?.id, scrollPositions]);
+
+    // Сохраняем позицию при изменении чата
+    useEffect(() => {
+        return () => {
+            // Сохраняем позицию при размонтировании компонента (смене чата)
+            if (chat && messagesContainerRef.current) {
+                const position = messagesContainerRef.current.scrollTop;
+                dispatch(saveScrollPosition({ chatId: chat.id, position }));
+                console.log('ChatWindow: сохраняем позицию скролла для чата', chat.id, 'позиция:', position);
+            }
+        };
+    }, [chat?.id, dispatch]);
+
+    // Сохраняем позицию скролла при скролле
+    const handleScroll = () => {
+        if (chat && messagesContainerRef.current) {
+            const position = messagesContainerRef.current.scrollTop;
+            dispatch(saveScrollPosition({ chatId: chat.id, position }));
+        }
+    };
+
+    // Автоматическая прокрутка к последнему сообщению только для новых сообщений
+    useEffect(() => {
+        if (chatMessages.length > 0 && messagesEndRef.current) {
+            const lastMessage = chatMessages[chatMessages.length - 1];
+            const isNewMessage = Date.now() - new Date(lastMessage.timestamp).getTime() < 5000; // Новое сообщение (5 секунд)
+
+            if (isNewMessage) {
+                console.log('ChatWindow: прокрутка к новому сообщению');
+                messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+            }
+        }
+    }, [chatMessages.length]);
+
+    // Логируем изменения сообщений для отладки
+    useEffect(() => {
+        console.log('ChatWindow: обновление сообщений для чата', chat.id, 'количество:', chatMessages.length);
+    }, [chat.id, chatMessages.length]);
 
     const handleSendMessage = async () => {
         if (!newMessage.trim() || isSending) return;
@@ -96,8 +144,6 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
         });
     };
 
-    const isChild = user?.role === 'child';
-
     return (
         <Box sx={{
             height: '100%',
@@ -105,10 +151,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
             flexDirection: 'column',
             background: isChild ? 'rgba(255, 255, 255, 0.05)' : 'transparent'
         }}>
-            {/* Заголовок чата - только для админа */}
-            {!isChild && (
+            {/* Заголовок чата - только для админа на десктопе */}
+            {!isChild && !isMobile && (
                 <Box sx={{
-                    p: isMobile ? 1 : 2,
+                    p: 2,
                     borderBottom: 1,
                     borderColor: 'divider',
                     display: 'flex',
@@ -116,7 +162,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
                     background: 'transparent'
                 }}>
                     <Avatar sx={{
-                        mr: isMobile ? 1 : 2,
+                        mr: 2,
                         background: 'rgba(0, 0, 0, 0.1)',
                         color: 'inherit'
                     }}>
@@ -124,7 +170,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
                     </Avatar>
                     <Box>
                         <Typography
-                            variant={isMobile ? "subtitle1" : "h6"}
+                            variant="h6"
                             sx={{
                                 color: 'inherit'
                             }}
@@ -142,13 +188,18 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
             )}
 
             {/* Область сообщений */}
-            <Box sx={{
-                flex: 1,
-                overflow: 'auto',
-                p: isMobile ? 1 : 2,
-                background: isChild ? 'rgba(255, 255, 255, 0.02)' : 'transparent',
-                pb: isMobile ? 8 : 2 // Добавляем отступ снизу на мобильных для поля ввода
-            }}>
+            <Box
+                ref={messagesContainerRef}
+                onScroll={handleScroll}
+                sx={{
+                    flex: 1,
+                    overflow: 'auto',
+                    p: isMobile ? 1 : 2,
+                    background: isChild ? 'rgba(255, 255, 255, 0.02)' : 'transparent',
+                    pb: isMobile ? 8 : 2, // Добавляем отступ снизу на мобильных для поля ввода
+                    height: '100%', // Занимаем всю доступную высоту
+                    maxHeight: '100%' // Ограничиваем максимальную высоту
+                }}>
                 {chatMessages.length === 0 ? (
                     <Box
                         display="flex"
@@ -196,7 +247,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
                                     <Paper
                                         sx={{
                                             p: isMobile ? 1 : 2,
-                                            maxWidth: isMobile ? '80%' : '70%',
+                                            maxWidth: isMobile ? '85%' : '70%',
                                             backgroundColor: isOwnMessage
                                                 ? (isChild ? 'rgba(255, 255, 255, 0.2)' : '#1976d2')
                                                 : (isChild ? 'rgba(255, 255, 255, 0.1)' : '#f5f5f5'),
@@ -236,18 +287,20 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
                 )}
             </Box>
 
-            {/* Поле ввода сообщения */}
+            {/* Поле ввода сообщений */}
             <Box sx={{
                 p: isMobile ? 1 : 2,
-                borderTop: isChild ? '2px solid rgba(255, 255, 255, 0.2)' : 1,
+                borderTop: isMobile ? '1px solid rgba(0, 0, 0, 0.1)' : (isChild ? '2px solid rgba(255, 255, 255, 0.2)' : 1),
                 borderColor: isChild ? 'transparent' : 'divider',
                 background: isChild ? 'rgba(255, 255, 255, 0.1)' : 'transparent',
-                position: isMobile ? 'fixed' : 'static',
+                position: isMobile ? 'sticky' : 'static', // Фиксируем внизу на мобильных
                 bottom: isMobile ? 0 : 'auto',
                 left: isMobile ? 0 : 'auto',
                 right: isMobile ? 0 : 'auto',
                 zIndex: isMobile ? 1000 : 'auto',
-                width: isMobile ? '100%' : 'auto'
+                width: isMobile ? '100%' : 'auto',
+                backdropFilter: isMobile ? 'blur(10px)' : 'none',
+                flexShrink: 0 // Предотвращаем сжатие поля ввода
             }}>
                 <Box sx={{ display: 'flex', gap: 1 }}>
                     <TextField
@@ -261,7 +314,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
                         disabled={isSending}
                         sx={{
                             '& .MuiOutlinedInput-root': {
-                                color: isChild ? '#fff' : 'inherit',
+                                color: isChild ? '#000' : 'inherit', // Черный текст для ребенка
+                                backgroundColor: isMobile ? 'rgba(255, 255, 255, 0.95)' : 'transparent', // Более непрозрачный фон
                                 '& fieldset': {
                                     borderColor: isChild ? 'rgba(255, 255, 255, 0.3)' : 'rgba(0, 0, 0, 0.23)'
                                 },
@@ -272,9 +326,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
                                     borderColor: isChild ? 'rgba(255, 255, 255, 0.8)' : '#1976d2'
                                 }
                             },
-                            '& .MuiInputBase-input::placeholder': {
-                                color: isChild ? 'rgba(255, 255, 255, 0.7)' : 'inherit',
-                                opacity: 1
+                            '& .MuiInputBase-input': {
+                                color: isChild ? '#000' : 'inherit', // Черный текст для ввода
+                                '&::placeholder': {
+                                    color: isChild ? 'rgba(0, 0, 0, 0.6)' : 'rgba(0, 0, 0, 0.5)', // Серый плейсхолдер для админа
+                                    opacity: 1
+                                }
                             }
                         }}
                     />

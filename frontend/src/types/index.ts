@@ -87,6 +87,20 @@ export interface Workshop {
         firstName: string;
         lastName: string;
     };
+    executors?: Array<{
+        id: number;
+        workshopId: number;
+        executorId: number;
+        assignedAt: Date;
+        isPrimary: boolean;
+        executor: {
+            id: number;
+            firstName: string;
+            lastName: string;
+            email: string;
+            phone?: string;
+        };
+    }>;
     school?: {
         id: number;
         name: string;
@@ -95,6 +109,7 @@ export interface Workshop {
         id: number;
         name: string;
         teacher: string;
+        phone?: string;
     };
     orders?: WorkshopOrder[];
     isChildRegistered?: boolean;
@@ -253,4 +268,14 @@ export interface AuthState {
 export interface AppState {
     auth: AuthState;
     // Другие состояния будут добавлены позже
+}
+
+export interface WorkshopExecutor {
+    id: number;
+    workshopId: number;
+    executorId: number;
+    assignedAt: Date;
+    isPrimary: boolean;
+    status: string;
+    workshop: Workshop;
 } 
