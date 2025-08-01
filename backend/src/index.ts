@@ -22,44 +22,39 @@ dotenv.config();
 const app = express();
 const PORT = process.env['PORT'] || 3001;
 
-// Создаем сервер только если не в Vercel
-const isVercel = process.env['VERCEL'] === '1';
-let server: http.Server | null = null;
+// Создаем сервер
+const server = http.createServer(app);
 let io: SocketIOServer | null = null;
 
-if (!isVercel) {
-    server = http.createServer(app);
+// Инициализация socket.io
+io = new SocketIOServer(server, {
+    cors: {
+        origin: ['http://localhost:5173', 'http://localhost:5174'],
+        methods: ['GET', 'POST'],
+        credentials: true
+    }
+});
 
-    // Инициализация socket.io только для локальной разработки
-    io = new SocketIOServer(server, {
-        cors: {
-            origin: ['http://localhost:5173', 'http://localhost:5174'],
-            methods: ['GET', 'POST'],
-            credentials: true
-        }
+// Обработка WebSocket подключений
+io.on('connection', (socket) => {
+    console.log('Клиент подключился:', socket.id);
+
+    // Присоединяемся к комнате чата
+    socket.on('join-chat', (chatId: number) => {
+        socket.join(`chat-${chatId}`);
+        console.log(`Клиент ${socket.id} присоединился к чату ${chatId}`);
     });
 
-    // Обработка WebSocket подключений
-    io.on('connection', (socket) => {
-        console.log('Клиент подключился:', socket.id);
-
-        // Присоединяемся к комнате чата
-        socket.on('join-chat', (chatId: number) => {
-            socket.join(`chat-${chatId}`);
-            console.log(`Клиент ${socket.id} присоединился к чату ${chatId}`);
-        });
-
-        // Покидаем комнату чата
-        socket.on('leave-chat', (chatId: number) => {
-            socket.leave(`chat-${chatId}`);
-            console.log(`Клиент ${socket.id} покинул чат ${chatId}`);
-        });
-
-        socket.on('disconnect', () => {
-            console.log('Клиент отключился:', socket.id);
-        });
+    // Покидаем комнату чата
+    socket.on('leave-chat', (chatId: number) => {
+        socket.leave(`chat-${chatId}`);
+        console.log(`Клиент ${socket.id} покинул чат ${chatId}`);
     });
-}
+
+    socket.on('disconnect', () => {
+        console.log('Клиент отключился:', socket.id);
+    });
+});
 
 // Экспортируем io для использования в роутерах
 export { io };
@@ -72,17 +67,16 @@ app.use(helmet({
 })); // Безопасность с разрешением cross-origin
 
 // Настройка CORS для фронта
-const corsOrigins = isVercel
-    ? [process.env['CORS_ORIGIN'] || 'https://your-domain.vercel.app']
-    : process.env['CORS_ORIGIN']
-        ? [process.env['CORS_ORIGIN']]
-        : [
-            'http://localhost:5173',
-            'http://localhost:5174',
-            'https://alexeymkvr.github.io',
-            'https://alexeymkvr.github.io/MKVR',
-            'https://mkvr-frontend.vercel.app'
-        ];
+const corsOrigins = process.env['CORS_ORIGIN']
+    ? [process.env['CORS_ORIGIN']]
+    : [
+        'http://localhost:5173',
+        'http://localhost:5174',
+        'https://alexeymkvr.github.io',
+        'https://alexeymkvr.github.io/MKVR',
+        'https://alexeifed.github.io',
+        'https://alexeifed.github.io/MKVR'
+    ];
 
 app.use(cors({
     origin: corsOrigins,
@@ -104,20 +98,18 @@ app.options('/uploads/*', (_req, res) => {
     res.sendStatus(200);
 });
 
-// Раздача статики с CORS-заголовками (только для локальной разработки)
-if (!isVercel) {
-    const uploadsPath = path.resolve(__dirname, '..', 'uploads');
-    console.log('STATIC UPLOADS PATH:', uploadsPath);
-    app.use('/uploads', express.static(uploadsPath, {
-        setHeaders: (res) => {
-            res.set('Access-Control-Allow-Origin', corsOrigins[0]);
-            res.set('Access-Control-Allow-Credentials', 'true');
-            res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
-            res.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
-            res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-        }
-    }));
-}
+// Раздача статики с CORS-заголовками
+const uploadsPath = path.resolve(__dirname, '..', 'uploads');
+console.log('STATIC UPLOADS PATH:', uploadsPath);
+app.use('/uploads', express.static(uploadsPath, {
+    setHeaders: (res) => {
+        res.set('Access-Control-Allow-Origin', corsOrigins[0]);
+        res.set('Access-Control-Allow-Credentials', 'true');
+        res.set('Access-Control-Allow-Methods', 'GET, OPTIONS');
+        res.set('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept');
+        res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+    }
+}));
 
 // Базовый роут
 app.get('/', (_req, res) => {
@@ -125,7 +117,7 @@ app.get('/', (_req, res) => {
         message: 'MKVR API - Сервер работает',
         version: '1.0.0',
         timestamp: new Date().toISOString(),
-        environment: isVercel ? 'vercel' : 'local'
+        environment: process.env.NODE_ENV || 'development'
     });
 });
 
@@ -134,7 +126,7 @@ app.get('/health', (_req, res) => {
     res.json({
         status: 'OK',
         timestamp: new Date().toISOString(),
-        environment: isVercel ? 'vercel' : 'local'
+        environment: process.env.NODE_ENV || 'development'
     });
 });
 
@@ -143,7 +135,7 @@ app.get('/api/health', (_req, res) => {
     res.json({
         status: 'OK',
         timestamp: new Date().toISOString(),
-        environment: isVercel ? 'vercel' : 'local'
+        environment: process.env.NODE_ENV || 'development'
     });
 });
 
@@ -153,7 +145,7 @@ app.get('/api', (_req, res) => {
         message: 'MKVR API - Сервер работает',
         version: '1.0.0',
         timestamp: new Date().toISOString(),
-        environment: isVercel ? 'vercel' : 'local',
+        environment: process.env.NODE_ENV || 'development',
         endpoints: {
             health: '/api/health',
             auth: '/api/auth',
@@ -194,13 +186,11 @@ app.use('*', (_req, res) => {
     });
 });
 
-// Запуск сервера только для локальной разработки
-if (!isVercel && server) {
-    server.listen(PORT, () => {
-        console.log(`🚀 Сервер запущен на порту ${PORT}`);
-        console.log(`📱 API доступен по адресу: http://localhost:${PORT}`);
-        console.log(`🔍 Health check: http://localhost:${PORT}/health`);
-    });
-}
+// Запуск сервера
+server.listen(PORT, () => {
+    console.log(`🚀 Сервер запущен на порту ${PORT}`);
+    console.log(`📱 API доступен по адресу: http://localhost:${PORT}`);
+    console.log(`🔍 Health check: http://localhost:${PORT}/health`);
+});
 
 export default app; 
