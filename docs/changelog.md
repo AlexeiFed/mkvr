@@ -2556,3 +2556,17 @@
 - Добавлено отношение `workshopExecutors WorkshopExecutor[]` в модели Workshop и User
 - Добавлено отношение `pushSubscriptions PushSubscription[]` в модель User
 - Добавлено отношение `user User` в модель PushSubscription
+
+## [2025-08-01] - Завершение настройки фронтенда для Render
+
+### Добавлено
+- Настройка фронтенда для работы с бэкендом на Render
+- Проверка всех конфигураций GitHub Actions и Vite
+
+### Изменено
+- API URL в .env.production настроен на https://mkvr-backend.onrender.com/api
+- GitHub Actions workflow готов для автоматического деплоя
+- Vite конфигурация настроена для GitHub Pages
+
+### Исправлено
+- Все конфигурации фронтенда проверены и готовы к деплою
