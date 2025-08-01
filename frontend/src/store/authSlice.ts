@@ -7,6 +7,7 @@
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
+import { api } from '../services/api';
 
 // Типы
 export interface User {
@@ -72,110 +73,40 @@ export const registerUser = createAsyncThunk(
         childLastName?: string;
         childAge?: number;
     }) => {
-        const response = await fetch('http://localhost:3001/api/auth/register', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка регистрации');
-        }
-
-        return response.json();
+        const response = await api.post('/auth/register', userData);
+        return response.data;
     }
 );
 
 export const loginUser = createAsyncThunk(
     'auth/login',
     async (credentials: { email: string; password: string }) => {
-        const response = await fetch('http://localhost:3001/api/auth/login', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(credentials),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка входа');
-        }
-
-        return response.json();
+        const response = await api.post('/auth/login', credentials);
+        return response.data;
     }
 );
 
 export const logoutUser = createAsyncThunk(
     'auth/logout',
-    async (_, { getState }) => {
-        const state = getState() as { auth: AuthState };
-        const token = state.auth.token;
-
-        if (token) {
-            await fetch('http://localhost:3001/api/auth/logout', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json',
-                },
-            });
-        }
-
+    async () => {
+        await api.post('/auth/logout');
         return null;
     }
 );
 
 export const fetchCurrentUser = createAsyncThunk(
     'auth/fetchCurrentUser',
-    async (_, { getState }) => {
-        const state = getState() as { auth: AuthState };
-        const token = state.auth.token;
-
-        if (!token) {
-            throw new Error('Токен не найден');
-        }
-
-        const response = await fetch('http://localhost:3001/api/auth/me', {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка получения данных пользователя');
-        }
-
-        return response.json();
+    async () => {
+        const response = await api.get('/auth/me');
+        return response.data;
     }
 );
 
 export const fetchChildren = createAsyncThunk(
     'auth/fetchChildren',
-    async (_, { getState }) => {
-        const state = getState() as { auth: AuthState };
-        const token = state.auth.token;
-
-        if (!token) {
-            throw new Error('Токен не найден');
-        }
-
-        const response = await fetch('http://localhost:3001/api/users/children', {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка получения списка детей');
-        }
-
-        return response.json();
+    async () => {
+        const response = await api.get('/users/children');
+        return response.data;
     }
 );
 
@@ -183,28 +114,14 @@ export const updateUserProfile = createAsyncThunk(
     'auth/updateUserProfile',
     async (userData: Partial<User>, { getState }) => {
         const state = getState() as { auth: AuthState };
-        const token = state.auth.token;
         const user = state.auth.user;
 
-        if (!token || !user) {
-            throw new Error('Токен или пользователь не найден');
+        if (!user) {
+            throw new Error('Пользователь не найден');
         }
 
-        const response = await fetch(`http://localhost:3001/api/users/${user.id}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(userData),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка обновления профиля');
-        }
-
-        return response.json();
+        const response = await api.put(`/users/${user.id}`, userData);
+        return response.data;
     }
 );
 
