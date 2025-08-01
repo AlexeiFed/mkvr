@@ -139,6 +139,23 @@ app.get('/api/health', (_req, res) => {
     });
 });
 
+// Базовый API endpoint
+app.get('/api', (_req, res) => {
+    res.json({
+        message: 'MKVR API - Сервер работает',
+        version: '1.0.0',
+        timestamp: new Date().toISOString(),
+        environment: isVercel ? 'vercel' : 'local',
+        endpoints: {
+            health: '/api/health',
+            auth: '/api/auth',
+            users: '/api/users',
+            services: '/api/services',
+            workshops: '/api/workshops'
+        }
+    });
+});
+
 // Тестовый endpoint для проверки подключения к базе данных
 app.get('/api/test-db', async (_req, res) => {
     try {
