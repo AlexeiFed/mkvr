@@ -2700,3 +2700,16 @@
 - Полный деплой приложения: бэкенд на Render + фронтенд на GitHub Pages
 - URL фронтенда: https://alexeifed.github.io/MKVR/
 - URL бэкенда: https://mkvr-backend.onrender.com
+
+## [2025-01-29] - Исправление проблем с деплоем на GitHub Pages и Render
+
+### Исправлено
+- Заменен BrowserRouter на HashRouter для совместимости с GitHub Pages
+- Убран base path в vite.config.ts для корректной работы с HashRouter
+- Добавлена поддержка globalThis в vite конфигурации
+- Обновлены CORS настройки для правильной работы с GitHub Pages
+
+### Технические изменения
+- Изменен роутинг с HTML5 History API на Hash-based routing
+- Оптимизирована конфигурация для продакшена
+- Исправлены проблемы с подключением к API в продакшене

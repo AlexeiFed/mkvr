@@ -7,7 +7,7 @@
 
 import React, { useEffect } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { HashRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { store } from './store';
 import { fetchCurrentUser } from './store/authSlice';
 import type { RootState } from './store';
@@ -170,9 +170,9 @@ const AppContent = () => {
 function App(): React.JSX.Element {
   return (
     <Provider store={store}>
-      <BrowserRouter>
+      <HashRouter>
         <AppContent />
-      </BrowserRouter>
+      </HashRouter>
     </Provider>
   );
 }
