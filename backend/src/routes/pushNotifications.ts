@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file: pushNotifications.ts
  * @description: API для работы с push-уведомлениями

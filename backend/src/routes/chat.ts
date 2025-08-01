@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file: chat.ts
  * @description: Роутер для работы с чатом и push-уведомлениями

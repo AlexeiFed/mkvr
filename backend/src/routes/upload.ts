@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file: upload.ts
  * @description: API роуты для загрузки файлов

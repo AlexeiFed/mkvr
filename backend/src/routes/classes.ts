@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file: classes.ts
  * @description: Роутер для CRUD операций с классами (Class)

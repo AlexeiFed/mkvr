@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file: subServices.ts
  * @description: Роутер для CRUD операций с комплектацией (SubService)

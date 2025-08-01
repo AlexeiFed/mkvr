@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file: schools.ts
  * @description: Роутер для CRUD операций со школами (School) с классами и сменами

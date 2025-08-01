@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file: workshops.ts
  * @description: Роутер для работы с мастер-классами

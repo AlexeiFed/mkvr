@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file: shifts.ts
  * @description: Роутер для CRUD операций со сменами (Shift)

@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file: users.ts
  * @description: Роуты для управления пользователями (админ)

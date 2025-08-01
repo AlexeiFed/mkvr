@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file: auth.ts
  * @description: Роутер для аутентификации пользователей

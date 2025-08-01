@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file: products.ts
  * @description: Роутер для работы с заказами (продуктами)

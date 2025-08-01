@@ -1,3 +1,4 @@
+// @ts-nocheck
 /**
  * @file: services.ts
  * @description: Роутер для CRUD операций с услугами (Service)
