@@ -44,7 +44,7 @@ const ExecutorDashboard: React.FC = () => {
     const [workshopExecutors, setWorkshopExecutors] = useState<WorkshopExecutor[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [notificationEnabled, setNotificationEnabled] = useState(false); // eslint-disable-line @typescript-eslint/no-unused-vars
+
     const [showNotificationDialog, setShowNotificationDialog] = useState(false);
 
     useEffect(() => {
@@ -92,8 +92,7 @@ const ExecutorDashboard: React.FC = () => {
 
         if (savedNotificationState === 'true') {
             // Если уже спрашивали, просто проверяем статус
-            const status = await PushNotificationService.getSubscriptionStatus();
-            setNotificationEnabled(status);
+            await PushNotificationService.getSubscriptionStatus();
         } else {
             // Если еще не спрашивали, показываем диалог
             setShowNotificationDialog(true);
@@ -104,8 +103,7 @@ const ExecutorDashboard: React.FC = () => {
         try {
             const initialized = await PushNotificationService.initialize();
             if (initialized) {
-                const subscribed = await PushNotificationService.subscribe();
-                setNotificationEnabled(subscribed);
+                await PushNotificationService.subscribe();
 
                 // Сохраняем в localStorage что уже спрашивали
                 localStorage.setItem('notificationPermissionAsked', 'true');

@@ -279,17 +279,7 @@ const ChildProfile: React.FC<ChildProfileProps> = ({
         return 'лет';
     };
 
-    // Получаем название школы по ID (используется в форме редактирования)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const getSchoolName = (_schoolId?: number) => {
-        return '';
-    };
 
-    // Получаем название класса по ID (используется в форме редактирования)
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const getClassName = (_classId?: number) => {
-        return '';
-    };
 
     return (
         <Dialog
