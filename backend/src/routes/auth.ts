@@ -37,10 +37,11 @@ router.post('/register', async (req: Request, res: Response) => {
 
         // Базовая валидация
         if (!email || !firstName || !lastName || !password) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Email, имя, фамилия и пароль обязательны'
             });
+            return;
         }
 
         // Логирование возраста для отладки
