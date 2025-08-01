@@ -1,0 +1,32 @@
+{
+    "version": 2,
+    "name": "mkvr-app",
+    "builds": [
+        {
+            "src": "backend/dist/index.js",
+            "use": "@vercel/node"
+        },
+        {
+            "src": "frontend/dist/**",
+            "use": "@vercel/static"
+        }
+    ],
+    "routes": [
+        {
+            "src": "/api/(.*)",
+            "dest": "backend/dist/index.js"
+        },
+        {
+            "src": "/(.*)",
+            "dest": "frontend/dist/$1"
+        }
+    ],
+    "env": {
+        "NODE_ENV": "production"
+    },
+    "functions": {
+        "backend/dist/index.js": {
+            "maxDuration": 30
+        }
+    }
+}

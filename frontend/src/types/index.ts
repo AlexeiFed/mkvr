@@ -45,6 +45,8 @@ export interface Order {
     id: number;
     childId: number;
     parentId: number;
+    workshopId?: number;
+    notes?: string;
     school: string;
     grade: string;
     shift: string;
@@ -56,6 +58,20 @@ export interface Order {
     paymentStatus: PaymentStatus;
     amount: number;
     workshopDate: Date;
+    child?: {
+        id: number;
+        firstName: string;
+        lastName: string;
+        email: string;
+        age?: number;
+    };
+    parent?: {
+        id: number;
+        firstName: string;
+        lastName: string;
+        email: string;
+    };
+    orderComplectations?: OrderComplectation[];
     createdAt: Date;
     updatedAt: Date;
 }

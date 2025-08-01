@@ -32,7 +32,7 @@ import {
 } from '@mui/icons-material';
 import { fetchOrders, deleteOrder } from '../../store/ordersSlice';
 import type { RootState, AppDispatch } from '../../store';
-import type { Order } from '../../store/ordersSlice';
+import type { Order } from '../../types';
 
 interface OrdersListProps {
     onViewOrder: (order: Order) => void;

@@ -355,15 +355,17 @@ router.post('/:chatId/messages', authenticateToken, async (req: Request, res: Re
         });
 
         // Отправляем сообщение через WebSocket
-        io.emit('chat:message', {
-            chatId: parseInt(chatId),
-            message
-        });
+        if (io) {
+            io.emit('chat:message', {
+                chatId: parseInt(chatId),
+                message
+            });
 
-        // Отправляем уведомление об обновлении чата
-        io.emit('chat:updated', {
-            chatId: parseInt(chatId)
-        });
+            // Отправляем уведомление об обновлении чата
+            io.emit('chat:updated', {
+                chatId: parseInt(chatId)
+            });
+        }
 
         // Отправляем push-уведомление получателю
         const recipientId = userRole === 'admin' ? chat.parentId : chat.adminId;

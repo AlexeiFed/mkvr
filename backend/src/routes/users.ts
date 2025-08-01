@@ -150,7 +150,9 @@ router.delete('/:id', async (req: Request, res: Response) => {
         // Отправляем WebSocket событие о удалении пользователя
         if (req.app.get('io')) {
             const io = req.app.get('io');
-            io.emit('user:deleted', { userId: id, user });
+            if (io) {
+                io.emit('user:deleted', { userId: id, user });
+            }
         }
 
         return res.json({ success: true });

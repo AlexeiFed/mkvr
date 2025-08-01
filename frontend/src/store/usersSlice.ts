@@ -7,22 +7,7 @@
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-
-export interface User {
-    id: number;
-    email: string;
-    firstName: string;
-    lastName: string;
-    role: string;
-    phone?: string;
-    city?: string;
-    school?: string;
-    grade?: string;
-    shift?: string;
-    age?: number;
-    createdAt: string;
-    updatedAt: string;
-}
+import type { User } from '../types';
 
 export interface UsersState {
     users: User[];

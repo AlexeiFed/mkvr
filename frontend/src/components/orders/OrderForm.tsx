@@ -24,7 +24,8 @@ import {
 import type { AppDispatch, RootState } from '../../store';
 import { fetchServices } from '../../store/servicesSlice';
 import { createOrder, updateOrder, clearError } from '../../store/ordersSlice';
-import type { Order, CreateOrderData, UpdateOrderData } from '../../store/ordersSlice';
+import type { CreateOrderData, UpdateOrderData } from '../../store/ordersSlice';
+import type { Order } from '../../types';
 import { fetchSubServices } from '../../store/subServicesSlice';
 import type { Child } from '../../store/authSlice';
 import ComplectationCard from './ComplectationCard';
@@ -42,7 +43,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onCancel, onSuccess }) => 
     const { subServices } = useSelector((state: RootState) => state.subServices);
 
     const [selectedChild, setSelectedChild] = useState<Child | null>(null);
-    const [selectedComplectations, setSelectedComplectations] = useState<number[]>([]);
+    const [selectedComplectations, setSelectedComplectations] = useState<Array<{ subServiceId: number; variantId?: number }>>([]);
     const [selectedVariants, setSelectedVariants] = useState<{ [complectationId: number]: number }>({});
 
     const isEditing = !!order;
@@ -91,12 +92,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onCancel, onSuccess }) => 
             childId: selectedChild!.id,
             parentId: user!.id, // Assuming user is the parent for now
             workshopId: Number(data.workshopId),
-            selectedComplectations: selectedComplectations.map(complectationId => {
-                return {
-                    subServiceId: complectationId,
-                    variantId: selectedVariants[complectationId] || undefined
-                };
-            }),
+            selectedComplectations: selectedComplectations,
             notes: data.notes || '',
         };
 
@@ -228,6 +224,7 @@ const OrderForm: React.FC<OrderFormProps> = ({ order, onCancel, onSuccess }) => 
                                         complectation={complectation}
                                         selectedComplectations={selectedComplectations}
                                         setSelectedComplectations={setSelectedComplectations}
+                                        selectedVariants={selectedVariants}
                                         setSelectedVariants={setSelectedVariants}
                                     />
                                 ))}

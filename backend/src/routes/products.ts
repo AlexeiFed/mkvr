@@ -472,7 +472,7 @@ router.delete('/:id', async (req: Request, res: Response) => {
         });
 
         // Отправляем WebSocket события
-        if (order.workshopId) {
+        if (order.workshopId && io) {
             io.emit('workshop:updated', { workshopId: order.workshopId });
             io.emit('order:cancelled', { workshopId: order.workshopId });
         }

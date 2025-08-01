@@ -223,10 +223,12 @@ router.post('/register', async (req: Request, res: Response) => {
         // Отправляем WebSocket событие о регистрации нового пользователя
         if (req.app.get('io')) {
             const io = req.app.get('io');
-            io.emit('user:registered', {
-                user: result.user,
-                childUser: result.childUser
-            });
+            if (io) {
+                io.emit('user:registered', {
+                    user: result.user,
+                    childUser: result.childUser
+                });
+            }
         }
 
         return res.status(201).json({

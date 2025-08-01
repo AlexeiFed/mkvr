@@ -161,7 +161,7 @@ const ComplectationCard: React.FC<ComplectationCardProps> = ({
         }));
     };
 
-    const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
         setSelectedTab(newValue);
         if (complectation.variants && complectation.variants[newValue] && complectation.variants[newValue].id) {
             handleVariantChange(complectation.id, complectation.variants[newValue].id);

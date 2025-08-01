@@ -7,63 +7,7 @@
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
-
-// Типы
-export interface OrderComplectation {
-    id: number;
-    orderId: number;
-    subServiceId: number;
-    variantId?: number;
-    quantity: number;
-    price: number;
-    createdAt: string;
-    subService: {
-        id: number;
-        name: string;
-        minAge: number;
-        hasVariants: boolean;
-        variants: Array<{
-            id: number;
-            name: string;
-            description?: string;
-            price: number;
-        }>;
-    };
-    variant?: {
-        id: number;
-        name: string;
-        description?: string;
-        price: number;
-    };
-}
-
-export interface Order {
-    id: number;
-    childId: number;
-    parentId: number;
-    workshopId: number;
-    notes?: string;
-    status: 'pending' | 'paid' | 'completed' | 'cancelled';
-    paymentStatus: 'pending' | 'paid' | 'refunded';
-    amount: number;
-    workshopDate: string;
-    createdAt: string;
-    updatedAt: string;
-    child?: {
-        id: number;
-        firstName: string;
-        lastName: string;
-        email: string;
-        age?: number;
-    };
-    parent?: {
-        id: number;
-        firstName: string;
-        lastName: string;
-        email: string;
-    };
-    orderComplectations?: OrderComplectation[];
-}
+import type { Order } from '../types';
 
 export interface SelectedComplectation {
     subServiceId: number;

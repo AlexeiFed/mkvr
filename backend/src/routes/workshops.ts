@@ -656,7 +656,9 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Request,
         });
 
         // Отправляем событие через WebSocket
-        io.emit('workshop:created', { workshop });
+        if (io) {
+            io.emit('workshop:created', { workshop });
+        }
 
         return res.status(201).json({ success: true, workshop });
     } catch (error) {
@@ -744,7 +746,9 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Reques
         });
 
         // Отправляем WebSocket событие об обновлении мастер-класса
-        io.emit('workshop:updated', { workshopId: workshop.id });
+        if (io) {
+            io.emit('workshop:updated', { workshopId: workshop.id });
+        }
 
         return res.json({ success: true, workshop });
     } catch (error) {
@@ -1027,6 +1031,11 @@ router.post('/:id/executors', authenticateToken, requireRole(['admin']), async (
             }
         }
 
+        // Отправляем WebSocket событие для обновления данных у исполнителей
+        if (io) {
+            io.emit('workshop:updated', { workshopId: parseInt(id) });
+        }
+
         return res.json({ message: 'Исполнители назначены успешно', count: workshopExecutors.length });
     } catch (error) {
         console.error('Ошибка при назначении исполнителей:', error);
@@ -1114,6 +1123,11 @@ router.delete('/:id/executors/:executorId', authenticateToken, requireRole(['adm
                     data: { executorId: null }
                 });
             }
+        }
+
+        // Отправляем WebSocket событие для обновления данных у исполнителей
+        if (io) {
+            io.emit('workshop:updated', { workshopId: parseInt(id) });
         }
 
         return res.json({ message: 'Исполнитель удален из мастер-класса' });

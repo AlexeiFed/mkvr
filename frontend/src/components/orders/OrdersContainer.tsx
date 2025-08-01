@@ -11,7 +11,7 @@ import OrdersList from './OrdersList';
 import OrderForm from './OrderForm';
 import OrderDetails from './OrderDetails';
 import type { RootState } from '../../store';
-import type { Order } from '../../store/ordersSlice';
+import type { Order } from '../../types';
 
 type ViewMode = 'list' | 'create' | 'edit' | 'details';
 

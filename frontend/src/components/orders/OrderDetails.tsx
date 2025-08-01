@@ -29,7 +29,7 @@ import {
     Event,
     Person,
 } from '@mui/icons-material';
-import type { Order } from '../../store/ordersSlice';
+import type { Order } from '../../types';
 
 interface OrderDetailsProps {
     order: Order;

@@ -281,18 +281,14 @@ const ChildProfile: React.FC<ChildProfileProps> = ({
 
     // Получаем название школы по ID (используется в форме редактирования)
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const getSchoolName = (schoolId?: number) => {
-        if (!schoolId) return '';
-        const school = schools.find(s => s.id === schoolId);
-        return school?.name || '';
+    const getSchoolName = (_schoolId?: number) => {
+        return '';
     };
 
     // Получаем название класса по ID (используется в форме редактирования)
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const getClassName = (classId?: number) => {
-        if (!classId) return '';
-        const classItem = classes.find(c => c.id === classId);
-        return classItem?.name || '';
+    const getClassName = (_classId?: number) => {
+        return '';
     };
 
     return (

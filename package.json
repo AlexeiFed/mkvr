@@ -19,7 +19,8 @@
         "lint": "npm run lint --workspaces",
         "lint:fix": "npm run lint:fix --workspaces",
         "format": "prettier --write \"**/*.{js,jsx,ts,tsx,json,md}\"",
-        "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=backend && npm install --workspace=shared"
+        "install:all": "npm install && npm install --workspace=frontend && npm install --workspace=backend && npm install --workspace=shared",
+        "vercel-build": "npm run build:frontend && npm run build:backend"
     },
     "devDependencies": {
         "concurrently": "^8.2.2",
@@ -36,7 +37,8 @@
         "typescript",
         "postgresql",
         "masterclass",
-        "wax-pens"
+        "wax-pens",
+        "vercel"
     ],
     "author": "MKVR Team",
     "license": "MIT"

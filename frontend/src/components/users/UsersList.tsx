@@ -126,6 +126,7 @@ const UsersList: React.FC<UsersListProps> = ({
             case 'admin': return 'error';
             case 'parent': return 'primary';
             case 'child': return 'success';
+            case 'executor': return 'warning';
             default: return 'default';
         }
     };
@@ -135,6 +136,7 @@ const UsersList: React.FC<UsersListProps> = ({
             case 'admin': return 'Администратор';
             case 'parent': return 'Родитель';
             case 'child': return 'Ребенок';
+            case 'executor': return 'Исполнитель';
             default: return role;
         }
     };
@@ -219,6 +221,7 @@ const UsersList: React.FC<UsersListProps> = ({
                         <MenuItem value="admin">Администратор</MenuItem>
                         <MenuItem value="parent">Родитель</MenuItem>
                         <MenuItem value="child">Ребенок</MenuItem>
+                        <MenuItem value="executor">Исполнитель</MenuItem>
                     </Select>
                 </FormControl>
             </Box>
