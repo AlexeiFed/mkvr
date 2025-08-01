@@ -2576,3 +2576,19 @@
 ### Исправлено
 - Изменена ветка в .github/workflows/deploy.yml с main на master
 - Workflow теперь настроен на правильную ветку репозитория
+
+## [2025-08-01] - Успешный деплой фронтенда на GitHub Pages
+
+### Добавлено
+- Фронтенд успешно развернут на GitHub Pages
+- Исправлены TypeScript ошибки в компонентах
+
+### Исправлено
+- Удалены неиспользуемые функции getSchoolName и getClassName из ChildProfile.tsx
+- Удалена неиспользуемая переменная notificationEnabled из ExecutorDashboard.tsx
+- Исправлена проблема с кэшированием npm в GitHub Actions
+
+### Завершено
+- Полный деплой приложения: бэкенд на Render + фронтенд на GitHub Pages
+- URL фронтенда: https://alexeifed.github.io/MKVR/
+- URL бэкенда: https://mkvr-backend.onrender.com
