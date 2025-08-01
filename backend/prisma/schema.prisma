@@ -30,6 +30,8 @@ model User {
   chats        Chat[] @relation("UserChats")
   messages     Message[]
   workshops    Workshop[] @relation("WorkshopExecutors")
+  workshopExecutors WorkshopExecutor[]
+  pushSubscriptions PushSubscription[]
 
   @@map("users")
 }
@@ -44,6 +46,7 @@ model School {
 
   // Отношения
   classes Class[]
+  workshops Workshop[]
 
   @@map("schools")
 }
@@ -138,6 +141,7 @@ model Workshop {
   executors User[]    @relation("WorkshopExecutors")
   subServices SubService[] @relation("WorkshopSubServices")
   orders    Order[]
+  workshopExecutors WorkshopExecutor[]
 
   @@map("workshops")
 }
@@ -243,6 +247,9 @@ model PushSubscription {
   p256dh     String
   auth       String
   createdAt  DateTime @default(now())
+
+  // Отношения
+  user User @relation(fields: [userId], references: [id])
 
   @@unique([userId, endpoint])
   @@map("push_subscriptions")

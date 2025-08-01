@@ -5,8 +5,9 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon src/index.ts",
-    "build": "tsc -p tsconfig.prod.json",
-    "start": "node dist/index.js",
+    "build": "prisma generate && tsc -p tsconfig.prod.json",
+    "postbuild": "prisma generate",
+    "start": "prisma generate && node dist/index.js",
     "lint": "eslint src/**/*.ts",
     "lint:fix": "eslint src/**/*.ts --fix",
     "format": "prettier --write \"src/**/*.{ts,js,json}\"",
