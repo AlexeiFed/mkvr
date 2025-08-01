@@ -74,7 +74,15 @@ app.use(helmet({
 // Настройка CORS для фронта
 const corsOrigins = isVercel
     ? [process.env['CORS_ORIGIN'] || 'https://your-domain.vercel.app']
-    : ['http://localhost:5173', 'http://localhost:5174'];
+    : process.env['CORS_ORIGIN']
+        ? [process.env['CORS_ORIGIN']]
+        : [
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'https://alexeymkvr.github.io',
+            'https://alexeymkvr.github.io/MKVR',
+            'https://mkvr-frontend.vercel.app'
+        ];
 
 app.use(cors({
     origin: corsOrigins,
