@@ -74,7 +74,8 @@ const corsOrigins = process.env['CORS_ORIGIN']
         'http://localhost:5174',
         'https://alexeymkvr.github.io',
         'https://alexeymkvr.github.io/MKVR',
-        'https://alexeifed.github.io'
+        'https://alexeifed.github.io',
+        'https://alexeifed.github.io/mkvr'
     ];
 
 app.use(cors({
