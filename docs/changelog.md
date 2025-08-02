@@ -1,5 +1,19 @@
 # Changelog
 
+## [2025-08-02] - Исправление проблем с backend и регистрацией
+
+### Исправлено
+- Исправлен путь к subServices в backend роутах с `/sub-services` на `/subServices`
+- Добавлен JWT_SECRET в render.yaml для продакшена
+- Исправлены роли в форме регистрации с lowercase на uppercase
+- Исправлена логика отображения полей школы/класса при выборе роли "ребенок"
+
+### Технические изменения
+- Изменен путь в backend/src/routes/index.ts для соответствия frontend
+- Добавлен JWT_SECRET=mkvr-super-secret-jwt-key-2024-production в render.yaml
+- Исправлены значения ролей в RegisterForm.tsx: CHILD, PARENT, EXECUTOR, ADMIN
+- Убрана дублирующая переменная selectedRole в RegisterForm.tsx
+
 ## [2025-08-02] - Исправление всех fetch вызовов в slice файлах
 
 ### Исправлено

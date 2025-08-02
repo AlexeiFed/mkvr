@@ -451,10 +451,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
                                     label="Роль"
                                     disabled={isLoading}
                                 >
-                                    <MenuItem value="child">Ребенок</MenuItem>
-                                    <MenuItem value="parent">Родитель</MenuItem>
-                                    <MenuItem value="executor">Исполнитель</MenuItem>
-                                    <MenuItem value="admin">Администратор</MenuItem>
+                                    <MenuItem value="CHILD">Ребенок</MenuItem>
+                                    <MenuItem value="PARENT">Родитель</MenuItem>
+                                    <MenuItem value="EXECUTOR">Исполнитель</MenuItem>
+                                    <MenuItem value="ADMIN">Администратор</MenuItem>
                                 </Select>
                             </FormControl>
                         )}

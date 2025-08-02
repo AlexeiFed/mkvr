@@ -11,7 +11,7 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET
-        sync: false
+        value: mkvr-super-secret-jwt-key-2024-production
       - key: PORT
         value: 3001
       - key: CORS_ORIGIN

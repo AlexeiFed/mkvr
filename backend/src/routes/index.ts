@@ -28,7 +28,7 @@ router.use('/users', usersRoutes);
 router.use('/schools', schoolsRoutes);
 router.use('/classes', classesRoutes);
 router.use('/services', servicesRoutes);
-router.use('/sub-services', subServicesRoutes);
+router.use('/subServices', subServicesRoutes);
 router.use('/shifts', shiftsRoutes);
 router.use('/workshops', workshopsRoutes);
 router.use('/chat', chatRoutes);
