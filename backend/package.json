@@ -4,17 +4,11 @@
   "description": "Backend API для PWA-приложения 'Восковые ручки'",
   "main": "dist/index.js",
   "scripts": {
+    "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
-    "build": "prisma generate && tsc -p tsconfig.prod.json",
-    "postbuild": "prisma generate",
-    "start": "prisma generate && node dist/index.js",
-    "lint": "eslint src/**/*.ts",
-    "lint:fix": "eslint src/**/*.ts --fix",
-    "format": "prettier --write \"src/**/*.{ts,js,json}\"",
-    "type-check": "tsc --noEmit",
-    "prisma:generate": "prisma generate",
-    "prisma:migrate": "prisma migrate dev",
-    "prisma:studio": "prisma studio"
+    "build": "tsc",
+    "postbuild": "npm run create-test-data",
+    "create-test-data": "node create-test-admin.js"
   },
   "keywords": [
     "nodejs",
