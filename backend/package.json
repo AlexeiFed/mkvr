@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
-    "build": "prisma generate && prisma db push && tsc",
+    "build": "prisma generate && prisma db push --force-reset && tsc",
     "postbuild": "npm run create-test-data",
     "create-test-data": "node create-test-admin.js"
   },
