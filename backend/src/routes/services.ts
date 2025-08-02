@@ -125,11 +125,14 @@ router.put('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params['id']);
-        if (isNaN(id)) return res.status(400).json({ success: false, error: 'Некорректный ID' });
+        if (isNaN(id)) {
+            res.status(400).json({ success: false, error: 'Некорректный ID' });
+            return;
+        }
         await prisma.service.delete({ where: { id } });
-        return res.json({ success: true });
+        res.json({ success: true });
     } catch (error) {
-        return res.status(500).json({ success: false, error: 'Ошибка при удалении услуги' });
+        res.status(500).json({ success: false, error: 'Ошибка при удалении услуги' });
     }
 });
 
