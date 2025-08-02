@@ -221,10 +221,10 @@ router.get('/', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (re
                 });
 
                 const totalParticipants = orders.length;
-                const paidParticipants = orders.filter(order => order.paymentStatus === 'paid').length;
+                const paidParticipants = orders.filter(order => (order.paymentStatus as any) === 'paid').length;
                 const totalAmount = orders.reduce((sum, order) => sum + order.amount, 0);
                 const paidAmount = orders
-                    .filter(order => order.paymentStatus === 'paid')
+                    .filter(order => (order.paymentStatus as any) === 'paid')
                     .reduce((sum, order) => sum + order.amount, 0);
 
                 return {
@@ -343,10 +343,10 @@ router.get('/:id', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async 
         });
 
         const totalParticipants = orders.length;
-        const paidParticipants = orders.filter(order => order.paymentStatus === 'paid').length;
+        const paidParticipants = orders.filter(order => (order.paymentStatus as any) === 'paid').length;
         const totalAmount = orders.reduce((sum, order) => sum + order.amount, 0);
         const paidAmount = orders
-            .filter(order => order.paymentStatus === 'paid')
+            .filter(order => (order.paymentStatus as any) === 'paid')
             .reduce((sum, order) => sum + order.amount, 0);
 
         // Отладочная информация
@@ -530,7 +530,7 @@ router.post('/', authenticateToken, requireRole(['ADMIN']), async (req: Request,
                 where: { id: parseInt(executorId) }
             });
 
-            if (!executor || executor.role !== 'EXECUTOR') {
+            if (!executor || (executor.role as any) !== 'executor') {
                 res.status(400).json({
                     success: false,
                     error: 'Исполнитель не найден или не имеет соответствующей роли'
@@ -839,7 +839,7 @@ router.get('/statistics', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']),
         // Общая выручка
         const orders = await prisma.order.findMany({
             where: {
-                paymentStatus: 'paid'
+                paymentStatus: 'paid' as any
             },
             select: {
                 amount: true
@@ -1067,10 +1067,10 @@ router.get('/executor/my-workshops', authenticateToken, requireRole(['EXECUTOR']
             const orders = workshop.orders || [];
 
             const totalParticipants = orders.length;
-            const paidParticipants = orders.filter(order => order.paymentStatus === 'paid').length;
+            const paidParticipants = orders.filter(order => (order.paymentStatus as any) === 'paid').length;
             const totalAmount = orders.reduce((sum, order) => sum + order.amount, 0);
             const paidAmount = orders
-                .filter(order => order.paymentStatus === 'paid')
+                .filter(order => (order.paymentStatus as any) === 'paid')
                 .reduce((sum, order) => sum + order.amount, 0);
 
             return {
