@@ -5,15 +5,10 @@
  * @created: 2024-07-12
  */
 
-import React, { useState, useEffect } from 'react';
-import { useSelector, useDispatch } from 'react-redux';
-import { Box, Typography, Button, AppBar, Toolbar, IconButton, Drawer, List, ListItem, ListItemIcon, ListItemText, Divider, Badge, Avatar, Menu, MenuItem } from '@mui/material';
-import { Menu as MenuIcon, Home as HomeIcon, School as SchoolIcon, Group as GroupIcon, Notifications as NotificationsIcon, AccountCircle as AccountCircleIcon, Logout as LogoutIcon, Chat as ChatIcon } from '@mui/icons-material';
-import { useNavigate, Outlet } from 'react-router-dom';
-import { io as socketIOClient, Socket } from 'socket.io-client';
-import { api, SOCKET_URL } from '../../services/api';
-import type { User } from '../../types';
-import { logoutUser } from '../../store/authSlice';
+import React, { useEffect } from 'react';
+import { useDispatch } from 'react-redux';
+import { io as socketIOClient } from 'socket.io-client';
+import { SOCKET_URL } from '../../services/api';
 import { fetchConversations } from '../../store/chatSlice';
 import type { AppDispatch } from '../../store';
 

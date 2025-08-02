@@ -2789,3 +2789,19 @@
 - Добавлен экспорт SOCKET_URL из api.ts
 - Обновлены компоненты: WorkshopsContainer, WorkshopDetails, UsersContainer, ExecutorDashboard, ChildHome, ChildLayout, ChildMenu, ChatContainer, ChildWorkshopSignUp
 - Все компоненты теперь используют единую конфигурацию API URL
+
+## [2025-08-02] - Исправление ошибок TypeScript при сборке
+
+### Исправлено
+- Убраны неиспользуемые импорты в ChatContainer.tsx
+- Исправлены типы в ChatContainer.tsx - заменены any на правильные типы
+- Убраны неиспользуемые импорты в ChildLayout.tsx
+- Исправлены импорты в других компонентах для устранения ошибок сборки
+
+### Технические изменения
+- Заменены any типы на RootState и AppDispatch в ChatContainer
+- Убраны неиспользуемые Material-UI компоненты из импортов
+- Исправлены импорты SOCKET_URL в компонентах
+- Сборка теперь проходит без ошибок TypeScript
+
+## [2025-08-02] - Исправление хардкода localhost в компонентах

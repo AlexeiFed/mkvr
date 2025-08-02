@@ -28,7 +28,7 @@ import type { RootState } from '../../store';
 import type { AppDispatch } from '../../store';
 import { fetchConversations } from '../../store/chatSlice';
 import { io } from 'socket.io-client';
-import { api, SOCKET_URL } from '../../services/api';
+import { SOCKET_URL } from '../../services/api';
 
 interface ChildMenuProps {
     currentUser: User;

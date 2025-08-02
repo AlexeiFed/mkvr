@@ -5,7 +5,7 @@
  * @created: 2025-07-25
  */
 
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Box, Typography, Paper, Alert } from '@mui/material';
 import type { AppDispatch, RootState } from '../../store';
@@ -13,7 +13,7 @@ import { fetchUsers, setFilters, clearError, deleteUser } from '../../store/user
 import UsersList from './UsersList';
 import UserDetails from './UserDetails';
 import { io as socketIOClient, Socket } from 'socket.io-client';
-import api, { SOCKET_URL } from '../../services/api';
+import { SOCKET_URL } from '../../services/api';
 import type { User } from '../../types';
 
 const UsersContainer: React.FC = () => {

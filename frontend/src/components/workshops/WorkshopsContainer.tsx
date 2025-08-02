@@ -28,7 +28,7 @@ import WorkshopForm from './WorkshopForm';
 import AssignExecutorsModal from './AssignExecutorsModal';
 import type { Workshop } from '../../types';
 import { io as socketIOClient, Socket } from 'socket.io-client';
-import { api, SOCKET_URL } from '../../services/api';
+import { SOCKET_URL } from '../../services/api';
 
 const WorkshopsContainer: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
