@@ -173,7 +173,7 @@ const SubServicesList: React.FC<SubServicesListProps> = ({
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="body2" color="text.secondary">
-                                            {subService.service?.name || '—'}
+                                            {subService.serviceId || '—'}
                                         </Typography>
                                     </TableCell>
                                     <TableCell>

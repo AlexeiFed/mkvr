@@ -324,10 +324,10 @@ const subServicesSlice = createSlice({
                 const { subServiceId, variants } = action.payload;
                 const subService = state.subServices.find(s => s.id === subServiceId);
                 if (subService) {
-                    subService.variants = variants;
+                    subService.variants = variants || [];
                 }
                 if (state.currentSubService?.id === subServiceId) {
-                    state.currentSubService.variants = variants;
+                    state.currentSubService.variants = variants || [];
                 }
             });
 
@@ -337,9 +337,15 @@ const subServicesSlice = createSlice({
                 const { subServiceId, variant } = action.payload;
                 const subService = state.subServices.find(s => s.id === subServiceId);
                 if (subService) {
+                    if (!subService.variants) {
+                        subService.variants = [];
+                    }
                     subService.variants.push(variant);
                 }
                 if (state.currentSubService?.id === subServiceId) {
+                    if (!state.currentSubService.variants) {
+                        state.currentSubService.variants = [];
+                    }
                     state.currentSubService.variants.push(variant);
                 }
             });
@@ -349,13 +355,13 @@ const subServicesSlice = createSlice({
             .addCase(updateSubServiceVariant.fulfilled, (state, action) => {
                 const { subServiceId, variant } = action.payload;
                 const subService = state.subServices.find(s => s.id === subServiceId);
-                if (subService) {
+                if (subService && subService.variants) {
                     const variantIndex = subService.variants.findIndex(v => v.id === variant.id);
                     if (variantIndex !== -1) {
                         subService.variants[variantIndex] = variant;
                     }
                 }
-                if (state.currentSubService?.id === subServiceId) {
+                if (state.currentSubService?.id === subServiceId && state.currentSubService.variants) {
                     const variantIndex = state.currentSubService.variants.findIndex(v => v.id === variant.id);
                     if (variantIndex !== -1) {
                         state.currentSubService.variants[variantIndex] = variant;
@@ -368,10 +374,10 @@ const subServicesSlice = createSlice({
             .addCase(deleteSubServiceVariant.fulfilled, (state, action) => {
                 const { subServiceId, variantId } = action.payload;
                 const subService = state.subServices.find(s => s.id === subServiceId);
-                if (subService) {
+                if (subService && subService.variants) {
                     subService.variants = subService.variants.filter(v => v.id !== variantId);
                 }
-                if (state.currentSubService?.id === subServiceId) {
+                if (state.currentSubService?.id === subServiceId && state.currentSubService.variants) {
                     state.currentSubService.variants = state.currentSubService.variants.filter(v => v.id !== variantId);
                 }
             });

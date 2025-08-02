@@ -138,6 +138,7 @@ const ServicesContainer: React.FC = () => {
             return selectedService ? (
                 <ComplectationForm
                     serviceId={selectedService.id}
+                    services={[]}
                     onCancel={() => setViewMode('details')}
                     onSuccess={handleComplectationSuccess}
                 />
@@ -154,6 +155,7 @@ const ServicesContainer: React.FC = () => {
                 <ComplectationForm
                     subService={selectedSubService}
                     serviceId={selectedService.id}
+                    services={[]}
                     onCancel={() => setViewMode('details')}
                     onSuccess={handleComplectationSuccess}
                 />

@@ -13,10 +13,6 @@ import {
     Box,
     Button,
     TextField,
-    FormControl,
-    InputLabel,
-    Select,
-    MenuItem,
     Switch,
     FormControlLabel,
     CircularProgress,
@@ -61,11 +57,9 @@ interface CreateSubServiceVariantData {
 const ComplectationForm: React.FC<ComplectationFormProps> = ({
     subService,
     serviceId,
-    services,
     onCancel,
     onSuccess
 }) => {
-    const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [avatarFile, setAvatarFile] = useState<File | null>(null);
@@ -295,13 +289,13 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                                 maxFiles={1}
                                 maxSize={10 * 1024 * 1024}
                                 label="Загрузить аватар"
-                                onChange={() => {}}
+                                onChange={() => { }}
                                 onFilesChange={(files) => {
                                     if (files.length > 0) {
                                         setAvatarFile(files[0]);
                                     }
                                 }}
-                                disabled={isLoading || isUploading}
+                                disabled={isUploading}
                                 isLoading={isUploading}
                             />
                         </Box>
@@ -317,11 +311,11 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                                 maxFiles={10}
                                 maxSize={10 * 1024 * 1024}
                                 label="Загрузить фотографии"
-                                onChange={() => {}}
+                                onChange={() => { }}
                                 onFilesChange={(files) => {
                                     setAllPhotos(prev => [...prev, ...files]);
                                 }}
-                                disabled={isLoading || isUploading}
+                                disabled={isUploading}
                                 isLoading={isUploading}
                             />
                         </Box>
@@ -337,13 +331,13 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                                 maxFiles={1}
                                 maxSize={50 * 1024 * 1024}
                                 label="Загрузить видео"
-                                onChange={() => {}}
+                                onChange={() => { }}
                                 onFilesChange={(files) => {
                                     if (files.length > 0) {
                                         setVideoFile(files[0]);
                                     }
                                 }}
-                                disabled={isLoading || isUploading}
+                                disabled={isUploading}
                                 isLoading={isUploading}
                             />
                         </Box>
@@ -447,15 +441,15 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                         <Button
                             variant="outlined"
                             onClick={onCancel}
-                            disabled={isLoading || isUploading}
+                            disabled={isUploading}
                         >
                             Отмена
                         </Button>
                         <Button
                             type="submit"
                             variant="contained"
-                            disabled={isLoading || isUploading}
-                            startIcon={isLoading || isUploading ? <CircularProgress size={20} /> : null}
+                            disabled={isUploading}
+                            startIcon={isUploading ? <CircularProgress size={20} /> : null}
                         >
                             {subService ? 'Обновить' : 'Создать'}
                         </Button>

@@ -230,14 +230,14 @@ const servicesSlice = createSlice({
                     if (!service.subServices) {
                         service.subServices = [];
                     }
-                    service.subServices.push(subService);
+                    service.subServices.push({ ...subService, variants: subService.variants || [] });
                     console.log('Комплектация добавлена в services:', service.subServices.length);
                 }
                 if (state.currentService?.id === serviceId) {
                     if (!state.currentService.subServices) {
                         state.currentService.subServices = [];
                     }
-                    state.currentService.subServices.push(subService);
+                    state.currentService.subServices.push({ ...subService, variants: subService.variants || [] });
                     console.log('Комплектация добавлена в currentService:', state.currentService.subServices.length);
                 }
             })
@@ -247,13 +247,13 @@ const servicesSlice = createSlice({
                 if (service && service.subServices) {
                     const index = service.subServices.findIndex(ss => ss.id === subService.id);
                     if (index !== -1) {
-                        service.subServices[index] = subService;
+                        service.subServices[index] = { ...subService, variants: subService.variants || [] };
                     }
                 }
                 if (state.currentService?.id === serviceId && state.currentService.subServices) {
                     const index = state.currentService.subServices.findIndex(ss => ss.id === subService.id);
                     if (index !== -1) {
-                        state.currentService.subServices[index] = subService;
+                        state.currentService.subServices[index] = { ...subService, variants: subService.variants || [] };
                     }
                 }
             })
