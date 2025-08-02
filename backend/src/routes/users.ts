@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @file: users.ts
  * @description: Роуты для управления пользователями (админ)
@@ -100,25 +99,23 @@ router.get('/', async (req: Request, res: Response) => {
         // Фильтруем по городу, если указан фильтр
         if (city) {
             processedUsers = processedUsers.filter(user =>
-                user.schoolAddress?.toLowerCase().includes(String(city).toLowerCase())
+                user.schoolAddress?.toLowerCase().includes(city.toString().toLowerCase())
             );
         }
 
+        // Получаем общее количество пользователей для пагинации
         const total = await prisma.user.count({ where });
 
-        return res.json({
+        res.json({
             success: true,
             users: processedUsers,
-            pagination: {
-                page: Number(page),
-                pageSize: Number(pageSize),
-                total,
-                totalPages: Math.ceil(total / Number(pageSize))
-            }
+            total,
+            page: Number(page),
+            pageSize: Number(pageSize)
         });
     } catch (error) {
         console.error('Ошибка получения пользователей:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при получении пользователей'
         });

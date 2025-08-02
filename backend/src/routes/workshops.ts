@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @file: workshops.ts
  * @description: Роутер для работы с мастер-классами
@@ -20,43 +19,48 @@ router.get('/child', authenticateToken, requireRole(['CHILD']), async (req: Requ
     try {
         const userId = req.user?.id;
         if (!userId) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'Пользователь не найден'
             });
+            return;
         }
 
-        // Получаем данные ребенка
-        const child = await prisma.user.findUnique({
-            where: { id: userId },
-            select: {
-                id: true,
-                school: true,
-                grade: true,
-                shift: true
-            }
+        // Получаем данные ребенка через последний заказ
+        const latestOrder = await prisma.order.findFirst({
+            where: { childId: userId },
+            include: {
+                workshop: {
+                    include: {
+                        school: true,
+                        class: true
+                    }
+                }
+            },
+            orderBy: { createdAt: 'desc' }
         });
 
-        console.log('[child workshops] user:', child);
+        console.log('[child workshops] latest order:', latestOrder);
 
-        if (!child || !child.school) {
-            return res.status(400).json({
+        if (!latestOrder?.workshop?.school) {
+            res.status(400).json({
                 success: false,
                 error: 'Данные школы не заполнены'
             });
+            return;
         }
 
         const now = new Date();
 
-        // Ищем мастер-классы для школы и класса ребенка (по schoolId и classId)
+        // Ищем мастер-классы для школы и класса ребенка
         const workshops = await prisma.workshop.findMany({
             where: {
-                schoolId: Number(child.school),
-                classId: Number(child.grade),
+                schoolId: latestOrder.workshop.schoolId,
+                classId: latestOrder.workshop.classId,
                 date: {
                     gte: now // только будущие мастер-классы
                 },
-                status: 'scheduled'
+                isActive: true
             },
             include: {
                 service: {
@@ -77,13 +81,6 @@ router.get('/child', authenticateToken, requireRole(['CHILD']), async (req: Requ
                         name: true,
                         teacher: true,
                     }
-                },
-                executor: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                    }
                 }
             },
             orderBy: {
@@ -91,7 +88,7 @@ router.get('/child', authenticateToken, requireRole(['CHILD']), async (req: Requ
             }
         });
 
-        console.log('[child workshops] found workshops:', workshops.map(w => ({ id: w.id, school: w.school?.name, class: w.class?.name, date: w.date, status: w.status })));
+        console.log('[child workshops] found workshops:', workshops.map(w => ({ id: w.id, school: w.school?.name, class: w.class?.name, date: w.date })));
 
         // Подсчитываем статистику для каждого мастер-класса
         const workshopsWithStats = await Promise.all(
@@ -101,61 +98,30 @@ router.get('/child', authenticateToken, requireRole(['CHILD']), async (req: Requ
                     include: {
                         child: {
                             select: {
-                                id: true,
                                 firstName: true,
                                 lastName: true,
-                                age: true,
-                            }
-                        },
-                        parent: {
-                            select: {
-                                id: true,
-                                firstName: true,
-                                lastName: true,
-                                phone: true,
-                            }
-                        },
-                        orderComplectations: {
-                            include: {
-                                subService: true
+                                age: true
                             }
                         }
                     }
                 });
 
-                const totalParticipants = orders.length;
-                const paidParticipants = orders.filter(order => order.paymentStatus === 'paid').length;
-                const totalAmount = orders.reduce((sum, order) => sum + order.amount, 0);
-                const paidAmount = orders
-                    .filter(order => order.paymentStatus === 'paid')
-                    .reduce((sum, order) => sum + order.amount, 0);
-
-                // Проверяем, записан ли ребенок на этот мастер-класс
-                const isChildRegistered = orders.some(order => order.childId === child.id);
-
                 return {
                     ...workshop,
-                    totalParticipants,
-                    paidParticipants,
-                    totalAmount,
-                    paidAmount,
-                    orders,
-                    isChildRegistered
+                    totalOrders: orders.length,
+                    totalAmount: orders.reduce((sum, order) => sum + order.amount, 0),
+                    children: orders.map(order => order.child)
                 };
             })
         );
 
-        // Добавляем заголовки для предотвращения кэширования
-        res.set({
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            'Pragma': 'no-cache',
-            'Expires': '0'
+        res.json({
+            success: true,
+            workshops: workshopsWithStats
         });
-
-        return res.json({ success: true, workshops: workshopsWithStats });
     } catch (error) {
         console.error('Ошибка получения мастер-классов для ребенка:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при получении мастер-классов'
         });
@@ -169,10 +135,11 @@ router.get('/', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (re
         const userId = (req as any).user?.id;
 
         if (!userId) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'Пользователь не авторизован'
             });
+            return;
         }
 
         const where: any = {};
@@ -235,26 +202,6 @@ router.get('/', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (re
                         id: true,
                         name: true,
                     }
-                },
-                executor: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                    }
-                },
-                executors: {
-                    include: {
-                        executor: {
-                            select: {
-                                id: true,
-                                firstName: true,
-                                lastName: true,
-                                email: true,
-                                phone: true,
-                            }
-                        }
-                    }
                 }
             },
             orderBy: {
@@ -288,10 +235,10 @@ router.get('/', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (re
                 });
 
                 const totalParticipants = orders.length;
-                const paidParticipants = orders.filter(order => order.paymentStatus === 'paid').length;
+                const paidParticipants = orders.filter(order => order.paymentStatus === 'PAID').length;
                 const totalAmount = orders.reduce((sum, order) => sum + order.amount, 0);
                 const paidAmount = orders
-                    .filter(order => order.paymentStatus === 'paid')
+                    .filter(order => order.paymentStatus === 'PAID')
                     .reduce((sum, order) => sum + order.amount, 0);
 
                 return {
@@ -305,10 +252,10 @@ router.get('/', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (re
             })
         );
 
-        return res.json({ success: true, workshops: workshopsWithStats });
+        res.json({ success: true, workshops: workshopsWithStats });
     } catch (error) {
         console.error('Ошибка получения мастер-классов:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при получении мастер-классов'
         });
@@ -320,17 +267,19 @@ router.get('/:id', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async 
     try {
         const { id } = req.params;
         if (!id) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Некорректный ID мастер-класса'
             });
+            return;
         }
         const workshopId = parseInt(id);
         if (isNaN(workshopId)) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Некорректный ID мастер-класса'
             });
+            return;
         }
 
         const workshop = await prisma.workshop.findUnique({
@@ -356,26 +305,6 @@ router.get('/:id', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async 
                         teacher: true,
                         phone: true,
                     }
-                },
-                executor: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                    }
-                },
-                executors: {
-                    include: {
-                        executor: {
-                            select: {
-                                id: true,
-                                firstName: true,
-                                lastName: true,
-                                email: true,
-                                phone: true,
-                            }
-                        }
-                    }
                 }
             }
         });
@@ -383,19 +312,20 @@ router.get('/:id', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async 
         // Дополнительно получаем варианты для всех комплектаций
         if (workshop?.service?.subServices) {
             for (const subService of workshop.service.subServices) {
-                const variants = await (prisma as any).subServiceVariant.findMany({
+                const variants = await prisma.subServiceVariant.findMany({
                     where: { subServiceId: subService.id },
-                    orderBy: { order: 'asc' }
+                    orderBy: { id: 'asc' }
                 });
                 (subService as any).variants = variants;
             }
         }
 
         if (!workshop) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'Мастер-класс не найден'
             });
+            return;
         }
 
         const orders = await prisma.order.findMany({
@@ -427,10 +357,10 @@ router.get('/:id', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async 
         });
 
         const totalParticipants = orders.length;
-        const paidParticipants = orders.filter(order => order.paymentStatus === 'paid').length;
+        const paidParticipants = orders.filter(order => order.paymentStatus === 'PAID').length;
         const totalAmount = orders.reduce((sum, order) => sum + order.amount, 0);
         const paidAmount = orders
-            .filter(order => order.paymentStatus === 'paid')
+            .filter(order => order.paymentStatus === 'PAID')
             .reduce((sum, order) => sum + order.amount, 0);
 
         // Отладочная информация
@@ -453,10 +383,10 @@ router.get('/:id', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async 
             orders
         };
 
-        return res.json({ success: true, workshop: workshopWithStats });
+        res.json({ success: true, workshop: workshopWithStats });
     } catch (error) {
         console.error('Ошибка получения мастер-класса:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при получении мастер-класса'
         });
@@ -470,18 +400,20 @@ router.put('/:id', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async 
         const { executor, phone, notes } = req.body;
 
         if (!id) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'ID мастер-класса обязателен'
             });
+            return;
         }
 
         const workshopId = parseInt(id);
         if (isNaN(workshopId)) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Некорректный ID мастер-класса'
             });
+            return;
         }
 
         // Проверяем существование мастер-класса
@@ -490,10 +422,11 @@ router.put('/:id', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async 
         });
 
         if (!existingWorkshop) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'Мастер-класс не найден'
             });
+            return;
         }
 
         // Обновляем мастер-класс
@@ -525,24 +458,17 @@ router.put('/:id', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async 
                         id: true,
                         name: true,
                     }
-                },
-                executor: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                    }
                 }
             }
         });
 
-        return res.json({
+        res.json({
             success: true,
             workshop: updatedWorkshop
         });
     } catch (error) {
         console.error('Ошибка обновления мастер-класса:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при обновлении мастер-класса'
         });
@@ -558,17 +484,17 @@ router.post('/', authenticateToken, requireRole(['ADMIN']), async (req: Request,
             classId,
             date,
             time,
-            maxParticipants,
             executorId,
             notes
         } = req.body;
 
         // Валидация обязательных полей
         if (!serviceId || !schoolId || !date || !time) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Все обязательные поля должны быть заполнены'
             });
+            return;
         }
 
         // Проверка существования услуги
@@ -577,10 +503,11 @@ router.post('/', authenticateToken, requireRole(['ADMIN']), async (req: Request,
         });
 
         if (!service) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Услуга не найдена'
             });
+            return;
         }
 
         // Проверка существования школы
@@ -589,10 +516,11 @@ router.post('/', authenticateToken, requireRole(['ADMIN']), async (req: Request,
         });
 
         if (!school) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Школа не найдена'
             });
+            return;
         }
 
         // Проверка существования класса (если указан)
@@ -602,10 +530,11 @@ router.post('/', authenticateToken, requireRole(['ADMIN']), async (req: Request,
             });
 
             if (!classExists) {
-                return res.status(400).json({
+                res.status(400).json({
                     success: false,
                     error: 'Класс не найден'
                 });
+                return;
             }
         }
 
@@ -616,10 +545,11 @@ router.post('/', authenticateToken, requireRole(['ADMIN']), async (req: Request,
             });
 
             if (!executor || executor.role !== 'EXECUTOR') {
-                return res.status(400).json({
+                res.status(400).json({
                     success: false,
                     error: 'Исполнитель не найден или не имеет соответствующей роли'
                 });
+                return;
             }
         }
 
@@ -630,8 +560,6 @@ router.post('/', authenticateToken, requireRole(['ADMIN']), async (req: Request,
                 classId: classId ? parseInt(classId) : null,
                 date: new Date(date),
                 time,
-                maxParticipants: maxParticipants ? parseInt(maxParticipants) : 20, // значение по умолчанию
-                executorId: executorId ? parseInt(executorId) : null,
                 notes: notes || null,
             },
             include: {
@@ -653,13 +581,6 @@ router.post('/', authenticateToken, requireRole(['ADMIN']), async (req: Request,
                         name: true,
                         teacher: true,
                     }
-                },
-                executor: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                    }
                 }
             }
         });
@@ -669,10 +590,10 @@ router.post('/', authenticateToken, requireRole(['ADMIN']), async (req: Request,
             io.emit('workshop:created', { workshop });
         }
 
-        return res.status(201).json({ success: true, workshop });
+        res.status(201).json({ success: true, workshop });
     } catch (error) {
         console.error('Ошибка создания мастер-класса:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при создании мастер-класса'
         });
@@ -684,17 +605,19 @@ router.put('/:id', authenticateToken, requireRole(['ADMIN']), async (req: Reques
     try {
         const { id } = req.params;
         if (!id) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Некорректный ID мастер-класса'
             });
+            return;
         }
         const workshopId = parseInt(id);
         if (isNaN(workshopId)) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Некорректный ID мастер-класса'
             });
+            return;
         }
 
         const {
@@ -703,8 +626,6 @@ router.put('/:id', authenticateToken, requireRole(['ADMIN']), async (req: Reques
             classId,
             date,
             time,
-            maxParticipants,
-            executorId,
             notes,
             status
         } = req.body;
@@ -716,8 +637,6 @@ router.put('/:id', authenticateToken, requireRole(['ADMIN']), async (req: Reques
         if (classId !== undefined) updateData.classId = classId ? parseInt(classId) : null;
         if (date !== undefined) updateData.date = new Date(date);
         if (time !== undefined) updateData.time = time;
-        if (maxParticipants !== undefined) updateData.maxParticipants = parseInt(maxParticipants);
-        if (executorId !== undefined) updateData.executorId = executorId ? parseInt(executorId) : null;
         if (notes !== undefined) updateData.notes = notes;
         if (status !== undefined) updateData.status = status;
 
@@ -743,13 +662,6 @@ router.put('/:id', authenticateToken, requireRole(['ADMIN']), async (req: Reques
                         name: true,
                         teacher: true,
                     }
-                },
-                executor: {
-                    select: {
-                        id: true,
-                        firstName: true,
-                        lastName: true,
-                    }
                 }
             }
         });
@@ -759,10 +671,10 @@ router.put('/:id', authenticateToken, requireRole(['ADMIN']), async (req: Reques
             io.emit('workshop:updated', { workshopId: workshop.id });
         }
 
-        return res.json({ success: true, workshop });
+        res.json({ success: true, workshop });
     } catch (error) {
         console.error('Ошибка обновления мастер-класса:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при обновлении мастер-класса'
         });
@@ -774,17 +686,19 @@ router.delete('/:id', authenticateToken, requireRole(['ADMIN']), async (req: Req
     try {
         const { id } = req.params;
         if (!id) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Некорректный ID мастер-класса'
             });
+            return;
         }
         const workshopId = parseInt(id);
         if (isNaN(workshopId)) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Некорректный ID мастер-класса'
             });
+            return;
         }
 
         // Проверяем, есть ли связанные заказы
@@ -793,20 +707,21 @@ router.delete('/:id', authenticateToken, requireRole(['ADMIN']), async (req: Req
         });
 
         if (ordersCount > 0) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Нельзя удалить мастер-класс, к которому привязаны заказы'
             });
+            return;
         }
 
         await prisma.workshop.delete({
             where: { id: workshopId }
         });
 
-        return res.json({ success: true, message: 'Мастер-класс удален' });
+        res.json({ success: true, message: 'Мастер-класс удален' });
     } catch (error) {
         console.error('Ошибка удаления мастер-класса:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при удалении мастер-класса'
         });
@@ -818,19 +733,21 @@ router.patch('/:id/update-payment', authenticateToken, requireRole(['ADMIN', 'EX
     try {
         const { id } = req.params;
         if (!id) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Некорректный ID мастер-класса'
             });
+            return;
         }
         const { orderId, paymentStatus, paidAmount } = req.body;
         const workshopId = parseInt(id);
         const orderIdNum = parseInt(orderId);
         if (isNaN(workshopId) || isNaN(orderIdNum)) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Некорректные ID'
             });
+            return;
         }
 
         // Проверяем, что заказ принадлежит этому мастер-классу
@@ -842,10 +759,11 @@ router.patch('/:id/update-payment', authenticateToken, requireRole(['ADMIN', 'EX
         });
 
         if (!order) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'Заказ не найден в данном мастер-классе'
             });
+            return;
         }
 
         // Обновляем статус оплаты
@@ -886,10 +804,10 @@ router.patch('/:id/update-payment', authenticateToken, requireRole(['ADMIN', 'EX
             }
         });
 
-        return res.json({ success: true, order: updatedOrder });
+        res.json({ success: true, order: updatedOrder });
     } catch (error) {
         console.error('Ошибка обновления оплаты:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при обновлении оплаты'
         });
@@ -980,11 +898,13 @@ router.post('/:id/executors', authenticateToken, requireRole(['ADMIN']), async (
         const { executorIds } = req.body;
 
         if (!executorIds || !Array.isArray(executorIds)) {
-            return res.status(400).json({ error: 'executorIds должен быть массивом' });
+            res.status(400).json({ error: 'executorIds должен быть массивом' });
+            return;
         }
 
         if (!id) {
-            return res.status(400).json({ error: 'ID мастер-класса не указан' });
+            res.status(400).json({ error: 'ID мастер-класса не указан' });
+            return;
         }
 
         const workshop = await prisma.workshop.findUnique({
@@ -992,7 +912,8 @@ router.post('/:id/executors', authenticateToken, requireRole(['ADMIN']), async (
         });
 
         if (!workshop) {
-            return res.status(404).json({ error: 'Мастер-класс не найден' });
+            res.status(404).json({ error: 'Мастер-класс не найден' });
+            return;
         }
 
         // Удаляем существующих исполнителей
@@ -1007,19 +928,10 @@ router.post('/:id/executors', authenticateToken, requireRole(['ADMIN']), async (
             const workshopExecutor = await prisma.workshopExecutor.create({
                 data: {
                     workshopId: parseInt(id),
-                    executorId,
-                    isPrimary: i === 0 // первый исполнитель становится основным
+                    executorId
                 }
             });
             workshopExecutors.push(workshopExecutor);
-        }
-
-        // Обновляем основного исполнителя в мастер-классе
-        if (executorIds.length > 0) {
-            await prisma.workshop.update({
-                where: { id: parseInt(id) },
-                data: { executorId: executorIds[0] }
-            });
         }
 
         // Отправляем push-уведомления исполнителям
@@ -1046,10 +958,10 @@ router.post('/:id/executors', authenticateToken, requireRole(['ADMIN']), async (
             io.emit('workshop:updated', { workshopId: parseInt(id) });
         }
 
-        return res.json({ message: 'Исполнители назначены успешно', count: workshopExecutors.length });
+        res.json({ message: 'Исполнители назначены успешно', count: workshopExecutors.length });
     } catch (error) {
         console.error('Ошибка при назначении исполнителей:', error);
-        return res.status(500).json({ error: 'Ошибка сервера' });
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
@@ -1059,7 +971,8 @@ router.get('/:id/executors', authenticateToken, requireRole(['ADMIN', 'EXECUTOR'
         const { id } = req.params;
 
         if (!id) {
-            return res.status(400).json({ error: 'ID мастер-класса не указан' });
+            res.status(400).json({ error: 'ID мастер-класса не указан' });
+            return;
         }
 
         const executors = await prisma.workshopExecutor.findMany({
@@ -1075,13 +988,13 @@ router.get('/:id/executors', authenticateToken, requireRole(['ADMIN', 'EXECUTOR'
                     }
                 }
             },
-            orderBy: { isPrimary: 'desc' }
+            orderBy: { createdAt: 'desc' }
         });
 
-        return res.json(executors);
+        res.json(executors);
     } catch (error) {
         console.error('Ошибка при получении исполнителей:', error);
-        return res.status(500).json({ error: 'Ошибка сервера' });
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
@@ -1091,7 +1004,8 @@ router.delete('/:id/executors/:executorId', authenticateToken, requireRole(['ADM
         const { id, executorId } = req.params;
 
         if (!id || !executorId) {
-            return res.status(400).json({ error: 'ID мастер-класса или исполнителя не указан' });
+            res.status(400).json({ error: 'ID мастер-класса или исполнителя не указан' });
+            return;
         }
 
         const workshopExecutor = await prisma.workshopExecutor.findFirst({
@@ -1102,48 +1016,23 @@ router.delete('/:id/executors/:executorId', authenticateToken, requireRole(['ADM
         });
 
         if (!workshopExecutor) {
-            return res.status(404).json({ error: 'Исполнитель не найден в этом мастер-классе' });
+            res.status(404).json({ error: 'Исполнитель не найден в этом мастер-классе' });
+            return;
         }
 
         await prisma.workshopExecutor.delete({
             where: { id: workshopExecutor.id }
         });
 
-        // Если удаляемый исполнитель был основным, назначаем нового
-        if (workshopExecutor.isPrimary) {
-            const nextExecutor = await prisma.workshopExecutor.findFirst({
-                where: { workshopId: parseInt(id) },
-                orderBy: { assignedAt: 'asc' }
-            });
-
-            if (nextExecutor) {
-                await prisma.workshopExecutor.update({
-                    where: { id: nextExecutor.id },
-                    data: { isPrimary: true }
-                });
-
-                await prisma.workshop.update({
-                    where: { id: parseInt(id) },
-                    data: { executorId: nextExecutor.executorId }
-                });
-            } else {
-                // Если исполнителей больше нет, очищаем основного исполнителя
-                await prisma.workshop.update({
-                    where: { id: parseInt(id) },
-                    data: { executorId: null }
-                });
-            }
-        }
-
         // Отправляем WebSocket событие для обновления данных у исполнителей
         if (io) {
             io.emit('workshop:updated', { workshopId: parseInt(id) });
         }
 
-        return res.json({ message: 'Исполнитель удален из мастер-класса' });
+        res.json({ message: 'Исполнитель удален из мастер-класса' });
     } catch (error) {
         console.error('Ошибка при удалении исполнителя:', error);
-        return res.status(500).json({ error: 'Ошибка сервера' });
+        res.status(500).json({ error: 'Ошибка сервера' });
     }
 });
 
@@ -1192,10 +1081,10 @@ router.get('/executor/my-workshops', authenticateToken, requireRole(['EXECUTOR']
             const orders = workshop.orders || [];
 
             const totalParticipants = orders.length;
-            const paidParticipants = orders.filter(order => order.paymentStatus === 'paid').length;
+            const paidParticipants = orders.filter(order => order.paymentStatus === 'PAID').length;
             const totalAmount = orders.reduce((sum, order) => sum + order.amount, 0);
             const paidAmount = orders
-                .filter(order => order.paymentStatus === 'paid')
+                .filter(order => order.paymentStatus === 'PAID')
                 .reduce((sum, order) => sum + order.amount, 0);
 
             return {
