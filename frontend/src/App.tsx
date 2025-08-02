@@ -101,7 +101,7 @@ const AppContent = () => {
       <Route
         path="/admin/*"
         element={
-          <ProtectedRoute allowedRoles={['admin']}>
+                          <ProtectedRoute allowedRoles={['ADMIN']}>
             <MainLayout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
@@ -123,7 +123,7 @@ const AppContent = () => {
       <Route
         path="/child/*"
         element={
-          <ProtectedRoute allowedRoles={['child']}>
+                          <ProtectedRoute allowedRoles={['CHILD']}>
             <ChildLayout>
               <Routes>
                 <Route path="/" element={<ChildHome />} />
@@ -139,7 +139,7 @@ const AppContent = () => {
       <Route
         path="/parent/*"
         element={
-          <ProtectedRoute allowedRoles={['parent']}>
+                          <ProtectedRoute allowedRoles={['PARENT']}>
             <div>Родительская панель (будет реализована)</div>
           </ProtectedRoute>
         }
@@ -149,7 +149,7 @@ const AppContent = () => {
       <Route
         path="/executor/*"
         element={
-          <ProtectedRoute allowedRoles={['executor']}>
+                          <ProtectedRoute allowedRoles={['EXECUTOR']}>
             <MainLayout>
               <Routes>
                 <Route path="/" element={<ExecutorDashboard />} />

@@ -26,7 +26,7 @@ router.post('/register', async (req: Request, res: Response) => {
             firstName,
             lastName,
             password,
-            role = 'child',
+            role = 'CHILD',
             age,
             schoolId,
             classId,
@@ -56,7 +56,7 @@ router.post('/register', async (req: Request, res: Response) => {
         }
 
         // Валидация для роли child
-        if (role === 'child') {
+        if (role === 'CHILD') {
             if (!schoolId || !classId || !shift) {
                 return res.status(400).json({
                     success: false,
@@ -66,7 +66,7 @@ router.post('/register', async (req: Request, res: Response) => {
         }
 
         // Валидация полей для родителя
-        if (role === 'parent') {
+        if (role === 'PARENT') {
             if (!schoolId || !classId || !shift) {
                 return res.status(400).json({
                     success: false,
@@ -108,7 +108,7 @@ router.post('/register', async (req: Request, res: Response) => {
         }
 
         // Проверка существования школы и класса (для ролей ребенок и родитель)
-        if (role === 'child' || role === 'parent') {
+        if (role === 'CHILD' || role === 'PARENT') {
             const school = await prisma.school.findUnique({
                 where: { id: schoolId },
             });
@@ -174,7 +174,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
             // Создание ребенка при регистрации родителя
             let childUser = null;
-            if (role === 'parent' && childFirstName && childLastName && childAge) {
+            if (role === 'PARENT' && childFirstName && childLastName && childAge) {
                 // Генерируем email для ребенка на основе данных родителя
                 const childEmail = `child_${user.id}_${Date.now()}@temp.local`;
 
@@ -184,7 +184,7 @@ router.post('/register', async (req: Request, res: Response) => {
                         firstName: childFirstName,
                         lastName: childLastName,
                         password: await bcrypt.hash('temp_password_' + Date.now(), SALT_ROUNDS), // временный пароль
-                        role: 'child',
+                        role: 'CHILD',
                         age: childAge,
                         school: schoolId ? schoolId.toString() : null,
                         grade: classId ? classId.toString() : null,

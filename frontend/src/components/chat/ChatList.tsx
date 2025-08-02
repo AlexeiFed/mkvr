@@ -81,7 +81,7 @@ const ChatList: React.FC<ChatListProps> = ({ conversations, currentChat }) => {
     };
 
     const getChatName = (chat: Chat) => {
-        if (user?.role === 'admin') {
+        if (user?.role === 'ADMIN') {
             return `${chat.parent.firstName} ${chat.parent.lastName}`;
         } else {
             return `${chat.admin.firstName} ${chat.admin.lastName}`;
@@ -89,7 +89,7 @@ const ChatList: React.FC<ChatListProps> = ({ conversations, currentChat }) => {
     };
 
     const getChatAvatar = () => {
-        if (user?.role === 'admin') {
+        if (user?.role === 'ADMIN') {
             return <Person />;
         } else {
             return <AdminPanelSettings />;
@@ -111,8 +111,8 @@ const ChatList: React.FC<ChatListProps> = ({ conversations, currentChat }) => {
         return chatName.includes(searchTerm.toLowerCase());
     });
 
-    const isChild = user?.role === 'child';
-    const isAdmin = user?.role === 'admin';
+    const isChild = user?.role === 'CHILD';
+    const isAdmin = user?.role === 'ADMIN';
 
     return (
         <Box sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
@@ -238,7 +238,7 @@ const ChatList: React.FC<ChatListProps> = ({ conversations, currentChat }) => {
                         >
                             {searchTerm
                                 ? 'Чаты не найдены'
-                                : user?.role === 'admin'
+                                : user?.role === 'ADMIN'
                                     ? 'Нет активных чатов'
                                     : 'Нажмите кнопку выше, чтобы начать чат с администратором!'
                             }

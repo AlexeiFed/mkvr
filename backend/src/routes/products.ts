@@ -142,7 +142,7 @@ router.post('/', async (req: Request, res: Response) => {
             });
         }
 
-        if (child.role !== 'child') {
+        if (child.role !== 'CHILD') {
             return res.status(400).json({
                 success: false,
                 error: 'Указанный пользователь не является ребёнком'

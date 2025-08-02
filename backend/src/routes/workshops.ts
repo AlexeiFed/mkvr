@@ -16,7 +16,7 @@ const router = Router();
 const prisma = new PrismaClient();
 
 // GET /api/workshops/child - Получить мастер-классы для ребенка
-router.get('/child', authenticateToken, requireRole(['child']), async (req: Request, res: Response) => {
+router.get('/child', authenticateToken, requireRole(['CHILD']), async (req: Request, res: Response) => {
     try {
         const userId = req.user?.id;
         if (!userId) {
@@ -163,7 +163,7 @@ router.get('/child', authenticateToken, requireRole(['child']), async (req: Requ
 });
 
 // GET /api/workshops - Получить все мастер-классы с фильтрацией
-router.get('/', authenticateToken, requireRole(['admin', 'executor']), async (req: Request, res: Response) => {
+router.get('/', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (req: Request, res: Response) => {
     try {
         const { date, city, schoolId, classId, serviceId, status } = req.query;
 
@@ -308,7 +308,7 @@ router.get('/', authenticateToken, requireRole(['admin', 'executor']), async (re
 });
 
 // GET /api/workshops/:id - Получить мастер-класс по ID
-router.get('/:id', authenticateToken, requireRole(['admin', 'executor']), async (req: Request, res: Response) => {
+router.get('/:id', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         if (!id) {
@@ -456,7 +456,7 @@ router.get('/:id', authenticateToken, requireRole(['admin', 'executor']), async 
 });
 
 // PUT /api/workshops/:id - Обновить мастер-класс
-router.put('/:id', authenticateToken, requireRole(['admin', 'executor']), async (req: Request, res: Response) => {
+router.put('/:id', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const { executor, phone, notes } = req.body;
@@ -542,7 +542,7 @@ router.put('/:id', authenticateToken, requireRole(['admin', 'executor']), async 
 });
 
 // POST /api/workshops - Создать новый мастер-класс
-router.post('/', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+router.post('/', authenticateToken, requireRole(['ADMIN']), async (req: Request, res: Response) => {
     try {
         const {
             serviceId,
@@ -607,7 +607,7 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Request,
                 where: { id: parseInt(executorId) }
             });
 
-            if (!executor || executor.role !== 'executor') {
+            if (!executor || executor.role !== 'EXECUTOR') {
                 return res.status(400).json({
                     success: false,
                     error: 'Исполнитель не найден или не имеет соответствующей роли'
@@ -672,7 +672,7 @@ router.post('/', authenticateToken, requireRole(['admin']), async (req: Request,
 });
 
 // PUT /api/workshops/:id - Обновить мастер-класс
-router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+router.put('/:id', authenticateToken, requireRole(['ADMIN']), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         if (!id) {
@@ -762,7 +762,7 @@ router.put('/:id', authenticateToken, requireRole(['admin']), async (req: Reques
 });
 
 // DELETE /api/workshops/:id - Удалить мастер-класс
-router.delete('/:id', authenticateToken, requireRole(['admin']), async (req: Request, res: Response) => {
+router.delete('/:id', authenticateToken, requireRole(['ADMIN']), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         if (!id) {
@@ -806,7 +806,7 @@ router.delete('/:id', authenticateToken, requireRole(['admin']), async (req: Req
 });
 
 // PATCH /api/workshops/:id/update-payment - Обновить статус оплаты заказа
-router.patch('/:id/update-payment', authenticateToken, requireRole(['admin', 'executor']), async (req: Request, res: Response) => {
+router.patch('/:id/update-payment', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         if (!id) {
@@ -889,7 +889,7 @@ router.patch('/:id/update-payment', authenticateToken, requireRole(['admin', 'ex
 });
 
 // GET /api/workshops/statistics - Получить статистику мастер-классов
-router.get('/statistics', authenticateToken, requireRole(['admin', 'executor']), async (req: Request, res: Response) => {
+router.get('/statistics', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (req: Request, res: Response) => {
     console.log('=== НАЧАЛО ОБРАБОТКИ СТАТИСТИКИ ===');
     console.log('URL:', req.url);
     console.log('Method:', req.method);
@@ -965,7 +965,7 @@ router.get('/statistics', authenticateToken, requireRole(['admin', 'executor']),
 });
 
 // Назначить исполнителей к мастер-классу
-router.post('/:id/executors', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.post('/:id/executors', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
     try {
         const { id } = req.params;
         const { executorIds } = req.body;
@@ -1045,7 +1045,7 @@ router.post('/:id/executors', authenticateToken, requireRole(['admin']), async (
 });
 
 // Получить исполнителей мастер-класса
-router.get('/:id/executors', authenticateToken, requireRole(['admin', 'executor']), async (req, res) => {
+router.get('/:id/executors', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (req, res) => {
     try {
         const { id } = req.params;
 
@@ -1077,7 +1077,7 @@ router.get('/:id/executors', authenticateToken, requireRole(['admin', 'executor'
 });
 
 // Удалить исполнителя из мастер-класса
-router.delete('/:id/executors/:executorId', authenticateToken, requireRole(['admin']), async (req, res) => {
+router.delete('/:id/executors/:executorId', authenticateToken, requireRole(['ADMIN']), async (req, res) => {
     try {
         const { id, executorId } = req.params;
 
@@ -1139,7 +1139,7 @@ router.delete('/:id/executors/:executorId', authenticateToken, requireRole(['adm
 });
 
 // Получить мастер-классы исполнителя
-router.get('/executor/my-workshops', authenticateToken, requireRole(['executor']), async (req, res) => {
+router.get('/executor/my-workshops', authenticateToken, requireRole(['EXECUTOR']), async (req, res) => {
     try {
         const userId = req.user!.id;
 

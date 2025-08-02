@@ -49,7 +49,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
 
     // Загружаем чаты при монтировании компонента
     useEffect(() => {
-        if (user?.role === 'admin') {
+        if (user?.role === 'ADMIN') {
             dispatch(fetchConversations());
         }
     }, [dispatch, user?.role]);
@@ -99,7 +99,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
                     </Typography>
                     <Box display="flex" alignItems="center" gap={2}>
                         {/* Иконка чата с индикатором непрочитанных сообщений */}
-                        {user.role === 'admin' && (
+                        {user.role === 'ADMIN' && (
                             <NotificationBadge onClick={handleChatClick} />
                         )}
                         <Avatar sx={{ width: 32, height: 32, fontSize: '0.875rem' }}>

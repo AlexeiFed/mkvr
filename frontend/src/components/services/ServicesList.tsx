@@ -63,7 +63,7 @@ const ServicesList: React.FC<ServicesListProps> = ({
         }
     };
 
-    const canManageServices = user && user.role === 'admin';
+            const canManageServices = user && user.role === 'ADMIN';
 
     if (isLoading) {
         return (

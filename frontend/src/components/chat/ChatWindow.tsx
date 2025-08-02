@@ -42,7 +42,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
     const scrollPositions = useSelector((state: RootState) => state.chat.scrollPositions);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-    const isChild = user?.role === 'child';
+            const isChild = user?.role === 'CHILD';
 
     const chatMessages = messages[chat.id] || [];
 
@@ -122,7 +122,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
     };
 
     const getChatName = () => {
-        if (user?.role === 'admin') {
+        if (user?.role === 'ADMIN') {
             return `${chat.parent.firstName} ${chat.parent.lastName}`;
         } else {
             return `${chat.admin.firstName} ${chat.admin.lastName}`;
@@ -130,7 +130,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ chat }) => {
     };
 
     const getChatAvatar = () => {
-        if (user?.role === 'admin') {
+        if (user?.role === 'ADMIN') {
             return <Person />;
         } else {
             return <AdminPanelSettings />;

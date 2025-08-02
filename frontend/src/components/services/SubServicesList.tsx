@@ -73,7 +73,7 @@ const SubServicesList: React.FC<SubServicesListProps> = ({
         }
     };
 
-    const canManageSubServices = user && user.role === 'admin';
+            const canManageSubServices = user && user.role === 'ADMIN';
 
     // Сортировка комплектации по названию
     const sortedSubServices = useMemo(() => {

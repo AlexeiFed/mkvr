@@ -64,10 +64,10 @@ const ChildHome: React.FC = () => {
             userRole: user?.role,
             userSchool: user?.school,
             userGrade: user?.grade,
-            shouldLoad: isAuthenticated && user && user.role === 'child' && user.school
+            shouldLoad: isAuthenticated && user && user.role === 'CHILD' && user.school
         });
 
-        if (isAuthenticated && user && user.role === 'child' && user.school) {
+        if (isAuthenticated && user && user.role === 'CHILD' && user.school) {
             console.log('ChildHome: Загружаем мастер-классы для ребенка');
             dispatch(fetchChildWorkshops());
         } else {
@@ -113,7 +113,7 @@ const ChildHome: React.FC = () => {
         }
     }, [authError]);
 
-    if (!isAuthenticated || !user || user.role !== 'child') {
+            if (!isAuthenticated || !user || user.role !== 'CHILD') {
         return (
             <Box sx={{
                 display: 'flex',

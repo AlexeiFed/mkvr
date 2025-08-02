@@ -51,7 +51,7 @@ interface RegisterFormData {
     lastName: string;
     password: string;
     confirmPassword: string;
-    role: 'admin' | 'executor' | 'parent' | 'child';
+    role: 'ADMIN' | 'EXECUTOR' | 'PARENT' | 'CHILD';
     age: number;
     // Поля для ребенка и родителя
     schoolId?: number;
@@ -112,7 +112,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
             lastName: '',
             password: '',
             confirmPassword: '',
-            role: 'child',
+            role: 'CHILD',
             age: 0,
         },
     });
@@ -567,7 +567,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
                         name="schoolId"
                         control={control}
                         rules={{
-                            required: (selectedRole === 'child' || selectedRole === 'parent') ? 'Школа обязательна' : false,
+                            required: (selectedRole === 'CHILD' || selectedRole === 'PARENT') ? 'Школа обязательна' : false,
                         }}
                         render={({ field }) => (
                             <input type="hidden" {...field} />
@@ -578,7 +578,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
                         name="classId"
                         control={control}
                         rules={{
-                            required: (selectedRole === 'child' || selectedRole === 'parent') ? 'Класс обязателен' : false,
+                            required: (selectedRole === 'CHILD' || selectedRole === 'PARENT') ? 'Класс обязателен' : false,
                         }}
                         render={({ field }) => (
                             <input type="hidden" {...field} />
@@ -589,7 +589,7 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
                         name="shift"
                         control={control}
                         rules={{
-                            required: (selectedRole === 'child' || selectedRole === 'parent') ? 'Смена обязательна' : false,
+                            required: (selectedRole === 'CHILD' || selectedRole === 'PARENT') ? 'Смена обязательна' : false,
                         }}
                         render={({ field }) => (
                             <input type="hidden" {...field} />
@@ -597,10 +597,10 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
                     />
 
                     {/* Поля для роли "ребенок" */}
-                    {selectedRole === 'child' && renderSchoolFields()}
+                    {selectedRole === 'CHILD' && renderSchoolFields()}
 
                     {/* Поля для роли "родитель" */}
-                    {selectedRole === 'parent' && (
+                    {selectedRole === 'PARENT' && (
                         <>
                             {renderSchoolFields()}
                             {renderChildFields()}

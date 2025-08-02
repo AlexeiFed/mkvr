@@ -63,7 +63,7 @@ const SchoolsList: React.FC<SchoolsListProps> = ({
         }
     };
 
-    const canManageSchools = user && user.role === 'admin';
+            const canManageSchools = user && user.role === 'ADMIN';
 
     // Сортировка школ по алфавиту
     const sortedSchools = useMemo(() => {

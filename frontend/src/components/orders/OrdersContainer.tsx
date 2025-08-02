@@ -54,7 +54,7 @@ const OrdersContainer: React.FC = () => {
     };
 
     // Проверка прав доступа
-    const canCreateOrder = user && (user.role === 'admin' || user.role === 'parent');
+            const canCreateOrder = user && (user.role === 'ADMIN' || user.role === 'PARENT');
 
     switch (viewMode) {
         case 'create':

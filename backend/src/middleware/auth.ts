@@ -100,7 +100,7 @@ export const requireOwnershipOrAdmin = (req: Request, res: Response, next: NextF
     const userId = req.user.id;
 
     // Админ может управлять любыми ресурсами
-    if (req.user.role === 'admin') {
+            if (req.user.role === 'ADMIN') {
         next();
         return;
     }

@@ -14,7 +14,7 @@ import { Navigate } from 'react-router-dom';
 
 interface ProtectedRouteProps {
     children: React.ReactNode;
-    requiredRole?: 'admin' | 'executor' | 'parent' | 'child';
+    requiredRole?: 'ADMIN' | 'EXECUTOR' | 'PARENT' | 'CHILD';
 }
 
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({

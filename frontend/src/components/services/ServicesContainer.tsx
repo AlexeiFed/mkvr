@@ -85,7 +85,7 @@ const ServicesContainer: React.FC = () => {
     };
 
     // Проверка прав доступа - только администраторы могут управлять услугами
-    const canManageServices = user && user.role === 'admin';
+            const canManageServices = user && user.role === 'ADMIN';
 
     switch (viewMode) {
         case 'create':

@@ -74,7 +74,7 @@ async function createTestUsers() {
                     firstName: 'Админ',
                     lastName: 'Тестовый',
                     password: hashedPassword,
-                    role: 'admin',
+                    role: 'ADMIN',
                     age: 30
                 }
             }),
@@ -85,7 +85,7 @@ async function createTestUsers() {
                     firstName: 'Исполнитель',
                     lastName: 'Тестовый',
                     password: hashedPassword,
-                    role: 'executor',
+                    role: 'EXECUTOR',
                     age: 25
                 }
             }),
@@ -96,10 +96,8 @@ async function createTestUsers() {
                     firstName: 'Родитель',
                     lastName: 'Тестовый',
                     password: hashedPassword,
-                    role: 'parent',
-                    age: 35,
-                    schoolId: school.id,
-                    classId: classItem.id
+                    role: 'PARENT',
+                    age: 35
                 }
             }),
             // Ребенок
@@ -109,10 +107,8 @@ async function createTestUsers() {
                     firstName: 'Ребенок',
                     lastName: 'Тестовый',
                     password: hashedPassword,
-                    role: 'child',
-                    age: 10,
-                    schoolId: school.id,
-                    classId: classItem.id
+                    role: 'CHILD',
+                    age: 10
                 }
             })
         ]);

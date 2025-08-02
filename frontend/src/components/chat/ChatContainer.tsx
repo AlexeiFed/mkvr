@@ -61,14 +61,14 @@ const ChatContainer: React.FC = () => {
                 alignItems="center"
                 minHeight="400px"
                 sx={{
-                    background: user?.role === 'child'
+                    background: user?.role === 'CHILD'
                         ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
                         : 'transparent',
-                    borderRadius: user?.role === 'child' ? 2 : 0,
-                    margin: user?.role === 'child' ? 2 : 0
+                            borderRadius: user?.role === 'CHILD' ? 2 : 0,
+        margin: user?.role === 'CHILD' ? 2 : 0
                 }}
             >
-                <CircularProgress sx={{ color: user?.role === 'child' ? '#fff' : 'primary' }} />
+                <CircularProgress sx={{ color: user?.role === 'CHILD' ? '#fff' : 'primary' }} />
             </Box>
         );
     }
@@ -82,7 +82,7 @@ const ChatContainer: React.FC = () => {
     }
 
     // Определяем стили в зависимости от роли пользователя
-    const isChild = user?.role === 'child';
+            const isChild = user?.role === 'CHILD';
 
     // Показываем мобильную версию на мобильных устройствах
     if (isMobileDevice) {
@@ -185,7 +185,7 @@ const ChatContainer: React.FC = () => {
                                     maxWidth: 400
                                 }}
                             >
-                                {user?.role === 'admin'
+                                {user?.role === 'ADMIN'
                                     ? 'Выберите пользователя из списка для начала чата'
                                     : 'Ожидайте сообщения от администратора. Мы скоро свяжемся с вами! 😊'
                                 }

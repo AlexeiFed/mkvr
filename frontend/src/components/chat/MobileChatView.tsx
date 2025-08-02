@@ -47,7 +47,7 @@ const MobileChatView: React.FC<MobileChatViewProps> = ({
         return null; // Показываем только на мобильных устройствах
     }
 
-    const isChild = user?.role === 'child';
+            const isChild = user?.role === 'CHILD';
 
     return (
         <Box sx={{

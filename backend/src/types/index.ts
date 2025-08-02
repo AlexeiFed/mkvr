@@ -6,7 +6,7 @@
  */
 
 // Роли пользователей
-export type UserRole = 'admin' | 'executor' | 'parent' | 'child';
+export type UserRole = 'ADMIN' | 'EXECUTOR' | 'PARENT' | 'CHILD';
 
 // Типы ручек
 export type PenType = 'regular' | 'double' | 'light';

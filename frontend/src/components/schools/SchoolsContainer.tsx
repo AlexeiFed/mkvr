@@ -54,7 +54,7 @@ const SchoolsContainer: React.FC = () => {
     };
 
     // Проверка прав доступа - только администраторы могут управлять школами
-    const canManageSchools = user && user.role === 'admin';
+            const canManageSchools = user && user.role === 'ADMIN';
 
     switch (viewMode) {
         case 'create':

@@ -105,15 +105,15 @@ const OrdersList: React.FC<OrdersListProps> = ({
 
     const canEditOrder = (order: Order) => {
         if (!user) return false;
-        if (user.role === 'admin') return true;
-        if (user.role === 'parent' && order.parentId === user.id) return true;
+        if (user.role === 'ADMIN') return true;
+        if (user.role === 'PARENT' && order.parentId === user.id) return true;
         return false;
     };
 
     const canDeleteOrder = (order: Order) => {
         if (!user) return false;
-        if (user.role === 'admin') return true;
-        if (user.role === 'parent' && order.parentId === user.id && order.status === 'pending') return true;
+        if (user.role === 'ADMIN') return true;
+        if (user.role === 'PARENT' && order.parentId === user.id && order.status === 'pending') return true;
         return false;
     };
 

@@ -97,7 +97,7 @@ router.get('/conversations', authenticateToken, async (req: Request, res: Respon
         const userRole = (req as any).user.role;
 
         let chats;
-        if (userRole === 'admin') {
+        if (userRole === 'ADMIN') {
             // Админ видит все чаты
             chats = await prisma.chat.findMany({
                 include: {
@@ -194,7 +194,7 @@ router.get('/:chatId/messages', authenticateToken, async (req: Request, res: Res
             });
         }
 
-        if (userRole !== 'admin' && chat.parentId !== userId) {
+        if (userRole !== 'ADMIN' && chat.parentId !== userId) {
             return res.status(403).json({
                 success: false,
                 error: 'Нет доступа к этому чату'
@@ -369,7 +369,7 @@ router.post('/:chatId/messages', authenticateToken, async (req: Request, res: Re
         }
 
         // Отправляем push-уведомление получателю
-        const recipientId = userRole === 'admin' ? chat.parentId : chat.adminId;
+        const recipientId = userRole === 'ADMIN' ? chat.parentId : chat.adminId;
         await sendPushNotification(recipientId, {
             title: `Новое сообщение от ${message.sender.firstName} ${message.sender.lastName}`,
             body: content.length > 50 ? content.substring(0, 50) + '...' : content,
@@ -398,7 +398,7 @@ router.post('/start', authenticateToken, async (req: Request, res: Response) => 
         const adminId = (req as any).user.id;
         const userRole = (req as any).user.role;
 
-        if (userRole !== 'admin') {
+        if (userRole !== 'ADMIN') {
             return res.status(403).json({
                 success: false,
                 error: 'Только администраторы могут создавать чаты'
@@ -417,7 +417,7 @@ router.post('/start', authenticateToken, async (req: Request, res: Response) => 
             where: { id: parseInt(parentId) }
         });
 
-        if (!parent || parent.role !== 'parent') {
+        if (!parent || parent.role !== 'PARENT') {
             return res.status(404).json({
                 success: false,
                 error: 'Родитель не найден'
@@ -478,7 +478,7 @@ router.post('/start-child', authenticateToken, async (req: Request, res: Respons
         const childId = (req as any).user.id;
         const userRole = (req as any).user.role;
 
-        if (userRole !== 'child') {
+        if (userRole !== 'CHILD') {
             return res.status(403).json({
                 success: false,
                 error: 'Только дети могут создавать чаты с администраторами'
@@ -487,7 +487,7 @@ router.post('/start-child', authenticateToken, async (req: Request, res: Respons
 
         // Находим первого доступного администратора
         const admin = await prisma.user.findFirst({
-            where: { role: 'admin' }
+            where: { role: 'ADMIN' }
         });
 
         if (!admin) {
@@ -551,7 +551,7 @@ router.post('/send-to-all', authenticateToken, async (req: Request, res: Respons
         const adminId = (req as any).user.id;
         const userRole = (req as any).user.role;
 
-        if (userRole !== 'admin') {
+        if (userRole !== 'ADMIN') {
             return res.status(403).json({
                 success: false,
                 error: 'Только администраторы могут отправлять сообщения всем'
