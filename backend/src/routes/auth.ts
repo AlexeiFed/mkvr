@@ -305,7 +305,6 @@ router.get('/me', authenticateToken, async (req: Request, res: Response) => {
                 firstName: true,
                 lastName: true,
                 role: true,
-                phone: true,
                 age: true,
                 createdAt: true,
                 updatedAt: true,
