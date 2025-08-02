@@ -7,11 +7,23 @@
 
 const { PrismaClient } = require('@prisma/client');
 const bcrypt = require('bcryptjs');
+const { execSync } = require('child_process');
 
 const prisma = new PrismaClient();
 
 async function createTestUsers() {
     try {
+        console.log('Проверка и создание таблиц базы данных...');
+
+        // Сначала выполняем миграции
+        try {
+            execSync('npx prisma migrate deploy', { stdio: 'inherit' });
+            console.log('✅ Миграции выполнены успешно');
+        } catch (error) {
+            console.log('Ошибка выполнения миграций:', error.message);
+            console.log('Продолжаем...');
+        }
+
         console.log('Проверка существующих тестовых данных...');
 
         // Проверяем, есть ли уже тестовые пользователи

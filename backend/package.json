@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node create-test-admin.js && node dist/index.js",
     "dev": "nodemon src/index.ts",
-    "build": "tsc",
+    "build": "prisma generate && tsc",
     "create-test-data": "node create-test-admin.js"
   },
   "keywords": [
