@@ -46,17 +46,19 @@ router.post('/subscribe', authenticateToken, async (req: AuthenticatedRequest, r
         const userId = req.user?.id;
 
         if (!userId) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'Пользователь не авторизован'
             });
+            return;
         }
 
         if (!endpoint || !p256dh || !auth) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Необходимы все параметры подписки'
             });
+            return;
         }
 
         // Удаляем старую подписку если есть
@@ -74,10 +76,10 @@ router.post('/subscribe', authenticateToken, async (req: AuthenticatedRequest, r
             }
         });
 
-        return res.json({ success: true, message: 'Подписка успешно создана' });
+        res.json({ success: true, message: 'Подписка успешно создана' });
     } catch (error) {
         console.error('Ошибка создания подписки:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка создания подписки'
         });
@@ -90,20 +92,21 @@ router.post('/unsubscribe', authenticateToken, async (req: AuthenticatedRequest,
         const userId = req.user?.id;
 
         if (!userId) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'Пользователь не авторизован'
             });
+            return;
         }
 
         await prisma.pushSubscription.deleteMany({
             where: { userId }
         });
 
-        return res.json({ success: true, message: 'Подписка удалена' });
+        res.json({ success: true, message: 'Подписка удалена' });
     } catch (error) {
         console.error('Ошибка удаления подписки:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка удаления подписки'
         });
@@ -117,10 +120,11 @@ router.get('/conversations', authenticateToken, async (req: AuthenticatedRequest
         const userRole = req.user?.role;
 
         if (!userId || !userRole) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'Пользователь не авторизован'
             });
+            return;
         }
 
         let chats;
@@ -165,10 +169,10 @@ router.get('/conversations', authenticateToken, async (req: AuthenticatedRequest
             });
         }
 
-        return res.json({ success: true, chats });
+        res.json({ success: true, chats });
     } catch (error) {
         console.error('Ошибка получения чатов:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка получения чатов'
         });
@@ -182,10 +186,11 @@ router.get('/:chatId/messages', authenticateToken, async (req: AuthenticatedRequ
         const userId = req.user?.id;
 
         if (!userId) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'Пользователь не авторизован'
             });
+            return;
         }
 
         // Проверяем существование чата и права доступа
@@ -204,18 +209,20 @@ router.get('/:chatId/messages', authenticateToken, async (req: AuthenticatedRequ
         });
 
         if (!chat) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'Чат не найден'
             });
+            return;
         }
 
         // Проверяем права доступа (только участник чата или админ)
         if (chat.userId !== userId && req.user?.role !== 'ADMIN') {
-            return res.status(403).json({
+            res.status(403).json({
                 success: false,
                 error: 'Нет прав доступа к чату'
             });
+            return;
         }
 
         const messages = await prisma.message.findMany({
@@ -233,10 +240,10 @@ router.get('/:chatId/messages', authenticateToken, async (req: AuthenticatedRequ
             orderBy: { createdAt: 'asc' }
         });
 
-        return res.json({ success: true, messages });
+        res.json({ success: true, messages });
     } catch (error) {
         console.error('Ошибка получения сообщений:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка получения сообщений'
         });
@@ -250,10 +257,11 @@ router.post('/:chatId/mark-read', authenticateToken, async (req: AuthenticatedRe
         const userId = req.user?.id;
 
         if (!userId) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'Пользователь не авторизован'
             });
+            return;
         }
 
         // Проверяем существование чата и права доступа
@@ -272,25 +280,27 @@ router.post('/:chatId/mark-read', authenticateToken, async (req: AuthenticatedRe
         });
 
         if (!chat) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'Чат не найден'
             });
+            return;
         }
 
         // Проверяем права доступа (только участник чата или админ)
         if (chat.userId !== userId && req.user?.role !== 'ADMIN') {
-            return res.status(403).json({
+            res.status(403).json({
                 success: false,
                 error: 'Нет прав доступа к чату'
             });
+            return;
         }
 
         // В текущей схеме нет поля isRead, поэтому просто возвращаем успех
-        return res.json({ success: true });
+        res.json({ success: true });
     } catch (error) {
         console.error('Ошибка сброса счетчика:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка сброса счетчика'
         });
@@ -306,17 +316,19 @@ router.post('/:chatId/messages', authenticateToken, async (req: AuthenticatedReq
         const userRole = req.user?.role;
 
         if (!userId) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'Пользователь не авторизован'
             });
+            return;
         }
 
         if (!content || content.trim().length === 0) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Сообщение не может быть пустым'
             });
+            return;
         }
 
         // Проверяем существование чата и права доступа
@@ -335,18 +347,20 @@ router.post('/:chatId/messages', authenticateToken, async (req: AuthenticatedReq
         });
 
         if (!chat) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'Чат не найден'
             });
+            return;
         }
 
         // Проверяем права доступа (только участник чата или админ)
         if (chat.userId !== userId && userRole !== 'ADMIN') {
-            return res.status(403).json({
+            res.status(403).json({
                 success: false,
                 error: 'Нет прав доступа к чату'
             });
+            return;
         }
 
         // Создаем сообщение
@@ -401,10 +415,10 @@ router.post('/:chatId/messages', authenticateToken, async (req: AuthenticatedReq
             });
         }
 
-        return res.json({ success: true, message });
+        res.json({ success: true, message });
     } catch (error) {
         console.error('Ошибка отправки сообщения:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка отправки сообщения'
         });
@@ -419,17 +433,19 @@ router.post('/start', authenticateToken, async (req: AuthenticatedRequest, res: 
         const userRole = req.user?.role;
 
         if (!adminId || userRole !== 'ADMIN') {
-            return res.status(403).json({
+            res.status(403).json({
                 success: false,
                 error: 'Только администраторы могут создавать чаты'
             });
+            return;
         }
 
         if (!targetUserId) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'ID пользователя обязателен'
             });
+            return;
         }
 
         // Проверяем существование пользователя
@@ -438,10 +454,11 @@ router.post('/start', authenticateToken, async (req: AuthenticatedRequest, res: 
         });
 
         if (!targetUser) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'Пользователь не найден'
             });
+            return;
         }
 
         // Проверяем, есть ли уже чат с этим пользователем
@@ -452,7 +469,8 @@ router.post('/start', authenticateToken, async (req: AuthenticatedRequest, res: 
         });
 
         if (existingChat) {
-            return res.json({ success: true, chat: existingChat });
+            res.json({ success: true, chat: existingChat });
+            return;
         }
 
         // Создаем новый чат
@@ -472,10 +490,10 @@ router.post('/start', authenticateToken, async (req: AuthenticatedRequest, res: 
             }
         });
 
-        return res.json({ success: true, chat });
+        res.json({ success: true, chat });
     } catch (error) {
         console.error('Ошибка создания чата:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка создания чата'
         });
@@ -489,10 +507,11 @@ router.post('/start-child', authenticateToken, async (req: AuthenticatedRequest,
         const userRole = req.user?.role;
 
         if (!childId || userRole !== 'CHILD') {
-            return res.status(403).json({
+            res.status(403).json({
                 success: false,
                 error: 'Только дети могут создавать чаты с администраторами'
             });
+            return;
         }
 
         // Находим первого доступного администратора
@@ -501,10 +520,11 @@ router.post('/start-child', authenticateToken, async (req: AuthenticatedRequest,
         });
 
         if (!admin) {
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'Администратор не найден'
             });
+            return;
         }
 
         // Проверяем, есть ли уже чат с этим ребенком
@@ -515,7 +535,8 @@ router.post('/start-child', authenticateToken, async (req: AuthenticatedRequest,
         });
 
         if (existingChat) {
-            return res.json({ success: true, chat: existingChat });
+            res.json({ success: true, chat: existingChat });
+            return;
         }
 
         // Создаем новый чат
@@ -535,10 +556,10 @@ router.post('/start-child', authenticateToken, async (req: AuthenticatedRequest,
             }
         });
 
-        return res.json({ success: true, chat });
+        res.json({ success: true, chat });
     } catch (error) {
         console.error('Ошибка создания чата ребенком:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка создания чата'
         });
@@ -552,19 +573,21 @@ router.post('/send-to-all', authenticateToken, async (req: AuthenticatedRequest,
         const userRole = req.user?.role;
 
         if (!adminId || userRole !== 'ADMIN') {
-            return res.status(403).json({
+            res.status(403).json({
                 success: false,
                 error: 'Только администраторы могут отправлять сообщения всем'
             });
+            return;
         }
 
         const { content } = req.body;
 
         if (!content) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Необходимо указать текст сообщения'
             });
+            return;
         }
 
         // Получаем всех активных пользователей (детей и родителей)
@@ -636,7 +659,7 @@ router.post('/send-to-all', authenticateToken, async (req: AuthenticatedRequest,
             });
         }
 
-        return res.json({
+        res.json({
             success: true,
             message: `Сообщение отправлено ${users.length} пользователям`,
             sentCount: users.length
@@ -644,7 +667,7 @@ router.post('/send-to-all', authenticateToken, async (req: AuthenticatedRequest,
 
     } catch (error) {
         console.error('Ошибка отправки сообщения всем:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка отправки сообщения всем'
         });

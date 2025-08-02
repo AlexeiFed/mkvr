@@ -27,10 +27,10 @@ router.get('/', async (_req: Request, res: Response) => {
                 subServices: {
                     include: {
                         variants: {
-                            orderBy: { order: 'asc' }
+                            orderBy: { id: 'asc' }
                         }
                     },
-                    orderBy: { order: 'asc' }
+                    orderBy: { id: 'asc' }
                 },
             },
         });
@@ -40,9 +40,9 @@ router.get('/', async (_req: Request, res: Response) => {
                 service.subServices = service.subServices.map(normalizePhotosField);
             }
         });
-        return res.json({ success: true, services });
+        res.json({ success: true, services });
     } catch (error) {
-        return res.status(500).json({ success: false, error: 'Ошибка при получении услуг' });
+        res.status(500).json({ success: false, error: 'Ошибка при получении услуг' });
     }
 });
 
@@ -50,41 +50,55 @@ router.get('/', async (_req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params['id']);
-        if (isNaN(id)) return res.status(400).json({ success: false, error: 'Некорректный ID' });
+        if (isNaN(id)) {
+            res.status(400).json({ success: false, error: 'Некорректный ID' });
+            return;
+        }
         const service = await prisma.service.findUnique({
             where: { id },
             include: {
                 subServices: {
                     include: {
                         variants: {
-                            orderBy: { order: 'asc' }
+                            orderBy: { id: 'asc' }
                         }
                     },
-                    orderBy: { order: 'asc' }
+                    orderBy: { id: 'asc' }
                 },
             },
         });
-        if (!service) return res.status(404).json({ success: false, error: 'Услуга не найдена' });
+        if (!service) {
+            res.status(404).json({ success: false, error: 'Услуга не найдена' });
+            return;
+        }
         if (Array.isArray(service.subServices)) {
             service.subServices = service.subServices.map(normalizePhotosField);
         }
-        return res.json({ success: true, service });
+        res.json({ success: true, service });
     } catch (error) {
-        return res.status(500).json({ success: false, error: 'Ошибка при получении услуги' });
+        res.status(500).json({ success: false, error: 'Ошибка при получении услуги' });
     }
 });
 
 // Создать услугу
 router.post('/', async (req: Request, res: Response) => {
     try {
-        const { name, description, isActive } = req.body;
-        if (!name) return res.status(400).json({ success: false, error: 'Название обязательно' });
+        const { name, description, isActive, price } = req.body;
+        if (!name) {
+            res.status(400).json({ success: false, error: 'Название обязательно' });
+            return;
+        }
         const service = await prisma.service.create({
-            data: { name, description, isActive: isActive !== false },
+            data: {
+                name,
+                description,
+                isActive: isActive !== false,
+                price: price || 0
+            },
         });
-        return res.status(201).json({ success: true, service });
+        res.status(201).json({ success: true, service });
     } catch (error) {
-        return res.status(500).json({ success: false, error: 'Ошибка при создании услуги' });
+        res.status(500).json({ success: false, error: 'Ошибка при создании услуги' });
     }
 });
 
@@ -92,15 +106,18 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params['id']);
-        const { name, description, isActive } = req.body;
-        if (isNaN(id)) return res.status(400).json({ success: false, error: 'Некорректный ID' });
+        const { name, description, isActive, price } = req.body;
+        if (isNaN(id)) {
+            res.status(400).json({ success: false, error: 'Некорректный ID' });
+            return;
+        }
         const service = await prisma.service.update({
             where: { id },
-            data: { name, description, isActive },
+            data: { name, description, isActive, price },
         });
-        return res.json({ success: true, service });
+        res.json({ success: true, service });
     } catch (error) {
-        return res.status(500).json({ success: false, error: 'Ошибка при обновлении услуги' });
+        res.status(500).json({ success: false, error: 'Ошибка при обновлении услуги' });
     }
 });
 
