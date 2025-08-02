@@ -15,9 +15,12 @@ import { api } from '../services/api';
 export interface SubServiceVariant {
     id?: number;
     name: string;
+    description?: string;
     price: number;
-    media: string[];
-    videos: string[];
+    avatar?: string;
+    photos: string[];
+    video?: string;
+    order: number;
     isActive: boolean;
 }
 
@@ -33,10 +36,14 @@ export interface SubService {
     id: number;
     serviceId: number;
     name: string;
+    description?: string;
+    avatar?: string;
+    photos: string[];
+    video?: string;
     minAge: number;
     order?: number;
     isActive: boolean;
-    price: number; // Цена для комплектаций без вариантов
+    price: number;
     createdAt: string;
     updatedAt: string;
     variants: SubServiceVariant[];

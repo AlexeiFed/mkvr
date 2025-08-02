@@ -101,6 +101,13 @@ const SortableComplectationCard: React.FC<SortableComplectationCardProps> = ({
                             {subService.name}
                         </Typography>
 
+                        {/* Описание комплектации */}
+                        {subService.description && (
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                {subService.description}
+                            </Typography>
+                        )}
+
                         {/* Информация о комплектации */}
                         <Box sx={{ mb: 2 }}>
                             <Typography variant="body2" color="text.secondary">
@@ -134,6 +141,11 @@ const SortableComplectationCard: React.FC<SortableComplectationCardProps> = ({
                                             <Typography variant="body2" fontWeight="bold">
                                                 {variant.name}
                                             </Typography>
+                                            {variant.description && (
+                                                <Typography variant="caption" color="text.secondary" sx={{ display: 'block' }}>
+                                                    {variant.description}
+                                                </Typography>
+                                            )}
                                             <Typography variant="caption" color="text.secondary">
                                                 Вариант комплектации
                                             </Typography>
@@ -157,16 +169,54 @@ const SortableComplectationCard: React.FC<SortableComplectationCardProps> = ({
 
                         {/* Медиа индикаторы */}
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                            <Chip
-                                label="Медиа недоступно"
-                                size="small"
-                                sx={{
-                                    background: 'linear-gradient(45deg, #9E9E9E, #BDBDBD)',
-                                    color: 'white',
-                                    fontWeight: 'bold',
-                                    borderRadius: 2
-                                }}
-                            />
+                            {subService.avatar && (
+                                <Chip
+                                    label="Аватар"
+                                    size="small"
+                                    sx={{
+                                        background: 'linear-gradient(45deg, #4CAF50, #66BB6A)',
+                                        color: 'white',
+                                        fontWeight: 'bold',
+                                        borderRadius: 2
+                                    }}
+                                />
+                            )}
+                            {subService.photos && subService.photos.length > 0 && (
+                                <Chip
+                                    label={`${subService.photos.length} фото`}
+                                    size="small"
+                                    sx={{
+                                        background: 'linear-gradient(45deg, #2196F3, #42A5F5)',
+                                        color: 'white',
+                                        fontWeight: 'bold',
+                                        borderRadius: 2
+                                    }}
+                                />
+                            )}
+                            {subService.video && (
+                                <Chip
+                                    label="Видео"
+                                    size="small"
+                                    sx={{
+                                        background: 'linear-gradient(45deg, #FF9800, #FFB74D)',
+                                        color: 'white',
+                                        fontWeight: 'bold',
+                                        borderRadius: 2
+                                    }}
+                                />
+                            )}
+                            {!subService.avatar && (!subService.photos || subService.photos.length === 0) && !subService.video && (
+                                <Chip
+                                    label="Медиа недоступно"
+                                    size="small"
+                                    sx={{
+                                        background: 'linear-gradient(45deg, #9E9E9E, #BDBDBD)',
+                                        color: 'white',
+                                        fontWeight: 'bold',
+                                        borderRadius: 2
+                                    }}
+                                />
+                            )}
                         </Box>
                     </Box>
                 </Box>
@@ -287,7 +337,8 @@ const ServiceDetails: React.FC<ServiceDetailsProps> = ({
 
     useEffect(() => {
         if (service.subServices) {
-            setLocalSubServices([...service.subServices].sort((a, b) => (a.order ?? 0) - (b.order ?? 0)));
+            const sortedSubServices = [...service.subServices].sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
+            setLocalSubServices(sortedSubServices);
         }
     }, [service.subServices]);
 
