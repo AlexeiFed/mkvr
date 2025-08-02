@@ -7,15 +7,22 @@
 const CACHE_NAME = 'mkvr-v1';
 const urlsToCache = [
     '/mkvr/',
-    '/mkvr/index.html',
-    '/mkvr/static/js/bundle.js',
-    '/mkvr/static/css/main.css'
+    '/mkvr/index.html'
 ];
 
 self.addEventListener('install', (event) => {
     event.waitUntil(
         caches.open(CACHE_NAME)
-            .then((cache) => cache.addAll(urlsToCache))
+            .then((cache) => {
+                // Исправляем ошибку addAll - добавляем файлы по одному
+                const cachePromises = urlsToCache.map(url => {
+                    return cache.add(url).catch(err => {
+                        console.warn('Не удалось кэшировать:', url, err);
+                        return null;
+                    });
+                });
+                return Promise.all(cachePromises);
+            })
     );
 });
 

@@ -171,10 +171,17 @@ app.use('/api', apiRoutes);
 
 // Обработка ошибок
 app.use((err: Error, _req: express.Request, res: express.Response, _next: express.NextFunction) => {
-    console.error(err.stack);
+    console.error('❌ Ошибка сервера:', err.stack);
+    console.error('📋 Детали ошибки:', {
+        message: err.message,
+        name: err.name,
+        stack: err.stack
+    });
+
     res.status(500).json({
         success: false,
         error: 'Внутренняя ошибка сервера',
+        message: process.env.NODE_ENV === 'development' ? err.message : 'Произошла ошибка на сервере'
     });
 });
 

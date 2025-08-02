@@ -14,15 +14,24 @@ const prisma = new PrismaClient();
 // GET /api/schools - Получить все школы
 router.get('/', async (req: Request, res: Response) => {
     try {
-        const schools = await prisma.school.findMany({
-            include: {
-                Class: true
-            }
-        });
+        console.log('🔍 Запрос на получение школ');
+
+        const schools = await prisma.school.findMany();
+
+        console.log(`✅ Найдено школ: ${schools.length}`);
         res.json({ success: true, schools });
     } catch (error) {
-        console.error('Ошибка получения школ:', error);
-        res.status(500).json({ success: false, error: 'Ошибка получения школ' });
+        console.error('❌ Ошибка получения школ:', error);
+        console.error('📋 Детали ошибки:', {
+            message: (error as Error).message,
+            name: (error as Error).name,
+            stack: (error as Error).stack
+        });
+        res.status(500).json({
+            success: false,
+            error: 'Ошибка получения школ',
+            message: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Произошла ошибка при получении школ'
+        });
     }
 });
 
@@ -31,10 +40,7 @@ router.get('/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
         const school = await prisma.school.findUnique({
-            where: { id: parseInt(id) },
-            include: {
-                Class: true
-            }
+            where: { id: parseInt(id) }
         });
 
         if (!school) {
@@ -52,7 +58,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 // POST /api/schools - Создать школу
 router.post('/', async (req: Request, res: Response) => {
     try {
-        const { name, address, note } = req.body;
+        const { name, address } = req.body;
 
         if (!name || !address) {
             res.status(400).json({ success: false, error: 'Название и адрес обязательны' });
@@ -62,8 +68,7 @@ router.post('/', async (req: Request, res: Response) => {
         const school = await prisma.school.create({
             data: {
                 name,
-                address,
-                note: note || null
+                address
             }
         });
 
@@ -78,14 +83,13 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
     try {
         const { id } = req.params;
-        const { name, address, note, isActive } = req.body;
+        const { name, address, isActive } = req.body;
 
         const school = await prisma.school.update({
             where: { id: parseInt(id) },
             data: {
                 name,
                 address,
-                note: note || null,
                 isActive: isActive !== undefined ? isActive : true
             }
         });
@@ -122,14 +126,7 @@ router.get('/:schoolId/classes', async (req: Request, res: Response) => {
                 id: true,
                 name: true,
                 phone: true,
-                shift: true,
-                teacher: true,
-                School: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                }
+                teacher: true
             },
             orderBy: {
                 name: 'asc'
@@ -146,7 +143,7 @@ router.get('/:schoolId/classes', async (req: Request, res: Response) => {
 router.post('/:schoolId/classes', async (req: Request, res: Response) => {
     try {
         const { schoolId } = req.params;
-        const { name, phone, shift, teacher } = req.body;
+        const { name, phone, teacher } = req.body;
 
         if (!name) {
             res.status(400).json({ success: false, error: 'Название класса обязательно' });
@@ -157,7 +154,6 @@ router.post('/:schoolId/classes', async (req: Request, res: Response) => {
             data: {
                 name,
                 phone: phone || null,
-                shift: shift || null,
                 teacher: teacher || null,
                 schoolId: parseInt(schoolId)
             }
@@ -174,14 +170,13 @@ router.post('/:schoolId/classes', async (req: Request, res: Response) => {
 router.put('/:schoolId/classes/:classId', async (req: Request, res: Response) => {
     try {
         const { classId } = req.params;
-        const { name, phone, shift, teacher } = req.body;
+        const { name, phone, teacher } = req.body;
 
         const classData = await prisma.class.update({
             where: { id: parseInt(classId) },
             data: {
                 name,
                 phone: phone || null,
-                shift: shift || null,
                 teacher: teacher || null
             }
         });
