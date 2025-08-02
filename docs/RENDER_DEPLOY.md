@@ -6,6 +6,7 @@
 1. **Ошибки 500 на API endpoints** (`/schools`, `/auth/login`)
 2. **Отсутствие переменной DATABASE_URL** в Render
 3. **Проблемы с подключением к базе данных**
+4. **Ошибка PrismaClientKnownRequestError** - таблицы не инициализированы
 
 ### Диагностика
 
@@ -64,14 +65,16 @@ curl -X POST https://mkvr-backend.onrender.com/api/auth/login \
 ### Выполнение миграций
 
 #### Автоматические миграции:
-Render автоматически выполнит миграции при деплое, если в `package.json` есть:
+Render автоматически выполнит инициализацию БД при деплое, если в `package.json` есть:
 ```json
 {
   "scripts": {
-    "build": "prisma generate && prisma migrate deploy && tsc"
+    "build": "prisma generate && prisma db push && tsc"
   }
 }
 ```
+
+**Примечание**: Используется `prisma db push` вместо `prisma migrate deploy` для автоматической синхронизации схемы с базой данных.
 
 #### Ручные миграции (если нужно):
 1. Подключиться к серверу через SSH

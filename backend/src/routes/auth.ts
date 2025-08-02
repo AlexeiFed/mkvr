@@ -212,7 +212,7 @@ router.post('/login', async (req: Request, res: Response) => {
         console.log('🔐 Запрос на вход пользователя');
         console.log('📋 Окружение:', process.env.NODE_ENV);
         console.log('📋 DATABASE_URL:', process.env.DATABASE_URL ? 'Настроен' : 'НЕ НАСТРОЕН');
-        
+
         const { email, password } = req.body;
 
         // Базовая валидация
@@ -220,6 +220,19 @@ router.post('/login', async (req: Request, res: Response) => {
             res.status(400).json({
                 success: false,
                 error: 'Email и пароль обязательны'
+            });
+            return;
+        }
+
+        // Проверка подключения к базе данных
+        try {
+            await prisma.$connect();
+            console.log('✅ Подключение к базе данных успешно');
+        } catch (dbError) {
+            console.error('❌ Ошибка подключения к БД:', dbError);
+            res.status(500).json({
+                success: false,
+                error: 'Ошибка подключения к базе данных'
             });
             return;
         }
@@ -285,10 +298,19 @@ router.post('/login', async (req: Request, res: Response) => {
             stack: (error as Error).stack
         });
         console.error('📋 DATABASE_URL:', process.env.DATABASE_URL);
-        res.status(500).json({
-            success: false,
-            error: 'Ошибка при входе'
-        });
+
+        // Специальная обработка ошибок Prisma
+        if (error.name === 'PrismaClientKnownRequestError') {
+            res.status(500).json({
+                success: false,
+                error: 'Ошибка базы данных - таблица не существует или не инициализирована'
+            });
+        } else {
+            res.status(500).json({
+                success: false,
+                error: 'Ошибка при входе'
+            });
+        }
     }
 });
 
