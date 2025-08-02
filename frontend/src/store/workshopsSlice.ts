@@ -8,6 +8,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Workshop } from '../types';
+import { api } from '../services/api';
 
 // Дополнительные типы для мастер-классов
 export interface WorkshopCreateData {
@@ -73,14 +74,7 @@ const initialState: WorkshopsState = {
 // Async thunks
 export const fetchWorkshops = createAsyncThunk(
     'workshops/fetchWorkshops',
-    async (filters: { date?: string | null; city?: string | null; schoolId?: string | null; classId?: string | null; serviceId?: string | null } | undefined, { getState }) => {
-        const state = getState() as { auth: { token: string | null } };
-        const token = state.auth.token;
-
-        if (!token) {
-            throw new Error('Токен не найден');
-        }
-
+    async (filters: { date?: string | null; city?: string | null; schoolId?: string | null; classId?: string | null; serviceId?: string | null } | undefined) => {
         const params = new URLSearchParams();
         if (filters?.date) params.append('date', filters.date);
         if (filters?.city) params.append('city', filters.city);
@@ -88,178 +82,69 @@ export const fetchWorkshops = createAsyncThunk(
         if (filters?.classId) params.append('classId', filters.classId);
         if (filters?.serviceId) params.append('serviceId', filters.serviceId);
 
-        const response = await fetch(`http://localhost:3001/api/workshops?${params.toString()}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-        if (!response.ok) throw new Error('Ошибка загрузки мастер-классов');
-        const data = await response.json();
-        return data.workshops || [];
+        const response = await api.get(`/workshops?${params.toString()}`);
+        return response.data.workshops || [];
     }
 );
 
 export const fetchWorkshopById = createAsyncThunk(
     'workshops/fetchWorkshopById',
-    async (id: string, { getState }) => {
-        const state = getState() as { auth: { token: string | null } };
-        const token = state.auth.token;
-
-        if (!token) {
-            throw new Error('Токен не найден');
-        }
-
-        const response = await fetch(`http://localhost:3001/api/workshops/${id}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-        if (!response.ok) throw new Error('Ошибка загрузки мастер-класса');
-        const data = await response.json();
-        return data.workshop;
+    async (id: string) => {
+        const response = await api.get(`/workshops/${id}`);
+        return response.data.workshop;
     }
 );
 
 export const createWorkshop = createAsyncThunk(
     'workshops/createWorkshop',
-    async (workshopData: WorkshopCreateData, { getState }) => {
-        const state = getState() as { auth: { token: string | null } };
-        const token = state.auth.token;
-
-        if (!token) {
-            throw new Error('Токен не найден');
-        }
-
-        const response = await fetch('http://localhost:3001/api/workshops', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify(workshopData),
-        });
-        if (!response.ok) throw new Error('Ошибка создания мастер-класса');
-        const data = await response.json();
-        return data.workshop;
+    async (workshopData: WorkshopCreateData) => {
+        const response = await api.post('/workshops', workshopData);
+        return response.data.workshop;
     }
 );
 
 export const updateWorkshop = createAsyncThunk(
     'workshops/updateWorkshop',
-    async ({ id, data }: { id: string; data: WorkshopUpdateData }, { getState }) => {
-        const state = getState() as { auth: { token: string | null } };
-        const token = state.auth.token;
-
-        if (!token) {
-            throw new Error('Токен не найден');
-        }
-
-        const response = await fetch(`http://localhost:3001/api/workshops/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify(data),
-        });
-        if (!response.ok) throw new Error('Ошибка обновления мастер-класса');
-        const responseData = await response.json();
-        return responseData.workshop;
+    async ({ id, data }: { id: string; data: WorkshopUpdateData }) => {
+        const response = await api.put(`/workshops/${id}`, data);
+        return response.data.workshop;
     }
 );
 
 export const deleteWorkshop = createAsyncThunk(
     'workshops/deleteWorkshop',
-    async (id: string, { getState }) => {
-        const state = getState() as { auth: { token: string | null } };
-        const token = state.auth.token;
-
-        if (!token) {
-            throw new Error('Токен не найден');
-        }
-
-        const response = await fetch(`http://localhost:3001/api/workshops/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-        if (!response.ok) throw new Error('Ошибка удаления мастер-класса');
+    async (id: string) => {
+        await api.delete(`/workshops/${id}`);
         return parseInt(id);
     }
 );
 
 export const updateWorkshopPayment = createAsyncThunk(
     'workshops/updateWorkshopPayment',
-    async ({ workshopId, childId, isPaid }: { workshopId: string; childId: string; isPaid: boolean }, { getState }) => {
-        const state = getState() as { auth: { token: string | null } };
-        const token = state.auth.token;
-
-        if (!token) {
-            throw new Error('Токен не найден');
-        }
-
-        const response = await fetch(`http://localhost:3001/api/workshops/${workshopId}/payment`, {
-            method: 'PUT',
-            headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${token}`,
-            },
-            body: JSON.stringify({ childId, isPaid }),
-        });
-        if (!response.ok) throw new Error('Ошибка обновления оплаты');
-        const responseData = await response.json();
+    async ({ workshopId, childId, isPaid }: { workshopId: string; childId: string; isPaid: boolean }) => {
+        const response = await api.put(`/workshops/${workshopId}/payment`, { childId, isPaid });
+        const responseData = await response.data;
         return responseData.workshop;
     }
 );
 
 export const fetchWorkshopsStatistics = createAsyncThunk(
     'workshops/fetchStatistics',
-    async (_, { getState }) => {
-        const state = getState() as { auth: { token: string | null } };
-        const token = state.auth.token;
-
-        if (!token) {
-            throw new Error('Токен не найден');
-        }
-
-        const response = await fetch('http://localhost:3001/api/workshops/statistics', {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-        if (!response.ok) throw new Error('Ошибка загрузки статистики');
-        const responseData = await response.json();
-        return responseData.statistics;
+    async () => {
+        const response = await api.get('/workshops/statistics');
+        return response.data.statistics;
     }
 );
 
 export const fetchChildWorkshops = createAsyncThunk(
     'workshops/fetchChildWorkshops',
-    async (_, { getState }) => {
+    async () => {
         console.log('fetchChildWorkshops: Начинаем загрузку мастер-классов для ребенка');
-
-        const state = getState() as { auth: { token: string | null } };
-        const token = state.auth.token;
-
-        if (!token) {
-            console.error('fetchChildWorkshops: Токен не найден');
-            throw new Error('Токен не найден');
-        }
-
         console.log('fetchChildWorkshops: Отправляем запрос к API');
-        const response = await fetch('http://localhost:3001/api/workshops/child', {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
 
-        if (!response.ok) {
-            console.error('fetchChildWorkshops: Ошибка API:', response.status, response.statusText);
-            throw new Error('Ошибка загрузки мастер-классов для ребенка');
-        }
+        const response = await api.get('/workshops/child');
 
-        const data = await response.json();
+        const data = response.data;
         console.log('fetchChildWorkshops: Получены данные:', data);
         console.log('fetchChildWorkshops: Количество мастер-классов:', data.workshops?.length || 0);
 

@@ -1,12 +1,13 @@
 /**
  * @file: subServicesSlice.ts
- * @description: Redux slice для управления комплектацией
- * @dependencies: @reduxjs/toolkit, react-redux
- * @created: 2024-07-07
+ * @description: Redux slice для управления комплектациями услуг (SubService)
+ * @dependencies: @reduxjs/toolkit
+ * @created: 2024-07-06
  */
 
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
+import { api } from '../services/api';
 
 // Типы
 export interface SubServiceVariant {
@@ -99,252 +100,91 @@ const initialState: SubServicesState = {
 // Async thunks
 export const fetchSubServices = createAsyncThunk(
     'subServices/fetchSubServices',
-    async (_, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch('http://localhost:3001/api/subServices', {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка получения комплектации');
-        }
-
-        return response.json();
+    async () => {
+        const response = await api.get('/subServices');
+        return response.data;
     }
 );
 
 export const fetchSubServiceById = createAsyncThunk(
     'subServices/fetchSubServiceById',
-    async (id: number, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch(`http://localhost:3001/api/subServices/${id}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка получения комплектации');
-        }
-
-        return response.json();
+    async (id: number) => {
+        const response = await api.get(`/subServices/${id}`);
+        return response.data;
     }
 );
 
 export const fetchSubServicesByService = createAsyncThunk(
     'subServices/fetchSubServicesByService',
-    async (serviceId: number, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch(`http://localhost:3001/api/subServices/service/${serviceId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка получения комплектации услуги');
-        }
-
-        return response.json();
+    async (serviceId: number) => {
+        const response = await api.get(`/subServices/service/${serviceId}`);
+        return response.data;
     }
 );
 
 export const createSubService = createAsyncThunk(
     'subServices/createSubService',
-    async (subServiceData: CreateSubServiceData, { getState }) => {
+    async (subServiceData: CreateSubServiceData) => {
         console.log('[createSubService] вызван с данными:', subServiceData);
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch('http://localhost:3001/api/subServices', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(subServiceData),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка создания комплектации');
-        }
-
-        return response.json();
+        const response = await api.post('/subServices', subServiceData);
+        return response.data;
     }
 );
 
 export const updateSubService = createAsyncThunk(
     'subServices/updateSubService',
-    async (subServiceData: UpdateSubServiceData, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
+    async (subServiceData: UpdateSubServiceData) => {
         const { id, ...updateData } = subServiceData;
-
-        const response = await fetch(`http://localhost:3001/api/subServices/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updateData),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка обновления комплектации');
-        }
-
-        return response.json();
+        const response = await api.put(`/subServices/${id}`, updateData);
+        return response.data;
     }
 );
 
 export const deleteSubService = createAsyncThunk(
     'subServices/deleteSubService',
-    async (id: number, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch(`http://localhost:3001/api/subServices/${id}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка удаления комплектации');
-        }
-
+    async (id: number) => {
+        await api.delete(`/subServices/${id}`);
         return id;
     }
 );
 
 export const fetchSubServiceVariants = createAsyncThunk(
     'subServices/fetchSubServiceVariants',
-    async (subServiceId: number, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch(`http://localhost:3001/api/subServices/${subServiceId}/variants`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка получения вариантов');
-        }
-
-        return response.json();
+    async (subServiceId: number) => {
+        const response = await api.get(`/subServices/${subServiceId}/variants`);
+        return { subServiceId, variants: response.data.variants };
     }
 );
 
 export const createSubServiceVariant = createAsyncThunk(
     'subServices/createSubServiceVariant',
-    async ({ subServiceId, variantData }: { subServiceId: number; variantData: CreateSubServiceVariantData }, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch(`http://localhost:3001/api/subServices/${subServiceId}/variants`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(variantData),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка создания варианта');
-        }
-
-        return response.json();
+    async ({ subServiceId, variantData }: { subServiceId: number; variantData: CreateSubServiceVariantData }) => {
+        const response = await api.post(`/subServices/${subServiceId}/variants`, variantData);
+        return { subServiceId, variant: response.data.variant };
     }
 );
 
 export const updateSubServiceVariant = createAsyncThunk(
     'subServices/updateSubServiceVariant',
-    async ({ subServiceId, variantId, variantData }: { subServiceId: number; variantId: number; variantData: Partial<CreateSubServiceVariantData> }, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch(`http://localhost:3001/api/subServices/${subServiceId}/variants/${variantId}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(variantData),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка обновления варианта');
-        }
-
-        return response.json();
+    async ({ subServiceId, variantId, variantData }: { subServiceId: number; variantId: number; variantData: Partial<CreateSubServiceVariantData> }) => {
+        const response = await api.put(`/subServices/${subServiceId}/variants/${variantId}`, variantData);
+        return { subServiceId, variant: response.data.variant };
     }
 );
 
 export const deleteSubServiceVariant = createAsyncThunk(
     'subServices/deleteSubServiceVariant',
-    async ({ subServiceId, variantId }: { subServiceId: number; variantId: number }, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch(`http://localhost:3001/api/subServices/${subServiceId}/variants/${variantId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка удаления варианта');
-        }
-
+    async ({ subServiceId, variantId }: { subServiceId: number; variantId: number }) => {
+        await api.delete(`/subServices/${subServiceId}/variants/${variantId}`);
         return { subServiceId, variantId };
     }
 );
 
 export const updateSubServiceOrder = createAsyncThunk(
     'subServices/updateSubServiceOrder',
-    async (orders: { id: number; order: number }[], { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch(`http://localhost:3001/api/subServices/order`, {
-            method: 'PATCH',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ orders }),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка обновления порядка комплектаций');
-        }
-
-        return response.json();
+    async (orderData: { id: number; order: number }[]) => {
+        const response = await api.post('/subServices/order', { order: orderData });
+        return response.data;
     }
 );
 
@@ -372,11 +212,11 @@ const subServicesSlice = createSlice({
             })
             .addCase(fetchSubServices.fulfilled, (state, action) => {
                 state.isLoading = false;
-                state.subServices = action.payload.subServices;
+                state.subServices = action.payload.subServices || [];
             })
             .addCase(fetchSubServices.rejected, (state, action) => {
                 state.isLoading = false;
-                state.error = action.error.message || 'Ошибка получения подуслуг';
+                state.error = action.error.message || 'Ошибка получения комплектаций';
             });
 
         // fetchSubServiceById
@@ -391,7 +231,7 @@ const subServicesSlice = createSlice({
             })
             .addCase(fetchSubServiceById.rejected, (state, action) => {
                 state.isLoading = false;
-                state.error = action.error.message || 'Ошибка получения подуслуги';
+                state.error = action.error.message || 'Ошибка получения комплектации';
             });
 
         // fetchSubServicesByService
@@ -402,11 +242,11 @@ const subServicesSlice = createSlice({
             })
             .addCase(fetchSubServicesByService.fulfilled, (state, action) => {
                 state.isLoading = false;
-                state.subServices = action.payload.subServices;
+                state.subServices = action.payload.subServices || [];
             })
             .addCase(fetchSubServicesByService.rejected, (state, action) => {
                 state.isLoading = false;
-                state.error = action.error.message || 'Ошибка получения подуслуг услуги';
+                state.error = action.error.message || 'Ошибка получения комплектаций услуги';
             });
 
         // createSubService
@@ -417,12 +257,11 @@ const subServicesSlice = createSlice({
             })
             .addCase(createSubService.fulfilled, (state, action) => {
                 state.isLoading = false;
-                const newSubService = action.payload.subService;
-                state.subServices.push(newSubService);
+                state.subServices.push(action.payload.subService);
             })
             .addCase(createSubService.rejected, (state, action) => {
                 state.isLoading = false;
-                state.error = action.error.message || 'Ошибка создания подуслуги';
+                state.error = action.error.message || 'Ошибка создания комплектации';
             });
 
         // updateSubService
@@ -433,18 +272,17 @@ const subServicesSlice = createSlice({
             })
             .addCase(updateSubService.fulfilled, (state, action) => {
                 state.isLoading = false;
-                const updatedSubService = action.payload.subService;
-                const index = state.subServices.findIndex(subService => subService.id === updatedSubService.id);
+                const index = state.subServices.findIndex(s => s.id === action.payload.subService.id);
                 if (index !== -1) {
-                    state.subServices[index] = updatedSubService;
+                    state.subServices[index] = action.payload.subService;
                 }
-                if (state.currentSubService?.id === updatedSubService.id) {
-                    state.currentSubService = updatedSubService;
+                if (state.currentSubService?.id === action.payload.subService.id) {
+                    state.currentSubService = action.payload.subService;
                 }
             })
             .addCase(updateSubService.rejected, (state, action) => {
                 state.isLoading = false;
-                state.error = action.error.message || 'Ошибка обновления подуслуги';
+                state.error = action.error.message || 'Ошибка обновления комплектации';
             });
 
         // deleteSubService
@@ -455,126 +293,84 @@ const subServicesSlice = createSlice({
             })
             .addCase(deleteSubService.fulfilled, (state, action) => {
                 state.isLoading = false;
-                const deletedId = action.payload;
-                state.subServices = state.subServices.filter(subService => subService.id !== deletedId);
-                if (state.currentSubService?.id === deletedId) {
+                state.subServices = state.subServices.filter(s => s.id !== action.payload);
+                if (state.currentSubService?.id === action.payload) {
                     state.currentSubService = null;
                 }
             })
             .addCase(deleteSubService.rejected, (state, action) => {
                 state.isLoading = false;
-                state.error = action.error.message || 'Ошибка удаления подуслуги';
+                state.error = action.error.message || 'Ошибка удаления комплектации';
             });
 
         // fetchSubServiceVariants
         builder
-            .addCase(fetchSubServiceVariants.pending, (state) => {
-                state.isLoading = true;
-                state.error = null;
-            })
             .addCase(fetchSubServiceVariants.fulfilled, (state, action) => {
-                state.isLoading = false;
-                // Обновляем варианты в соответствующей комплектации
-                const variants = action.payload.variants;
-                const subService = state.subServices.find(s => s.id === variants[0]?.subServiceId);
+                const { subServiceId, variants } = action.payload;
+                const subService = state.subServices.find(s => s.id === subServiceId);
                 if (subService) {
                     subService.variants = variants;
                 }
-                if (state.currentSubService && state.currentSubService.id === variants[0]?.subServiceId) {
+                if (state.currentSubService?.id === subServiceId) {
                     state.currentSubService.variants = variants;
                 }
-            })
-            .addCase(fetchSubServiceVariants.rejected, (state, action) => {
-                state.isLoading = false;
-                state.error = action.error.message || 'Ошибка получения вариантов';
             });
 
         // createSubServiceVariant
         builder
-            .addCase(createSubServiceVariant.pending, (state) => {
-                state.isLoading = true;
-                state.error = null;
-            })
             .addCase(createSubServiceVariant.fulfilled, (state, action) => {
-                state.isLoading = false;
-                const newVariant = action.payload.variant;
-                const subService = state.subServices.find(s => s.id === newVariant.subServiceId);
+                const { subServiceId, variant } = action.payload;
+                const subService = state.subServices.find(s => s.id === subServiceId);
                 if (subService) {
-                    subService.variants.push(newVariant);
+                    subService.variants.push(variant);
                 }
-                if (state.currentSubService && state.currentSubService.id === newVariant.subServiceId) {
-                    state.currentSubService.variants.push(newVariant);
+                if (state.currentSubService?.id === subServiceId) {
+                    state.currentSubService.variants.push(variant);
                 }
-            })
-            .addCase(createSubServiceVariant.rejected, (state, action) => {
-                state.isLoading = false;
-                state.error = action.error.message || 'Ошибка создания варианта';
             });
 
         // updateSubServiceVariant
         builder
-            .addCase(updateSubServiceVariant.pending, (state) => {
-                state.isLoading = true;
-                state.error = null;
-            })
             .addCase(updateSubServiceVariant.fulfilled, (state, action) => {
-                state.isLoading = false;
-                const updatedVariant = action.payload.variant;
-                const subService = state.subServices.find(s => s.id === updatedVariant.subServiceId);
+                const { subServiceId, variant } = action.payload;
+                const subService = state.subServices.find(s => s.id === subServiceId);
                 if (subService) {
-                    const index = subService.variants.findIndex(v => v.id === updatedVariant.id);
-                    if (index !== -1) {
-                        subService.variants[index] = updatedVariant;
+                    const variantIndex = subService.variants.findIndex(v => v.id === variant.id);
+                    if (variantIndex !== -1) {
+                        subService.variants[variantIndex] = variant;
                     }
                 }
-                if (state.currentSubService && state.currentSubService.id === updatedVariant.subServiceId) {
-                    const index = state.currentSubService.variants.findIndex(v => v.id === updatedVariant.id);
-                    if (index !== -1) {
-                        state.currentSubService.variants[index] = updatedVariant;
+                if (state.currentSubService?.id === subServiceId) {
+                    const variantIndex = state.currentSubService.variants.findIndex(v => v.id === variant.id);
+                    if (variantIndex !== -1) {
+                        state.currentSubService.variants[variantIndex] = variant;
                     }
                 }
-            })
-            .addCase(updateSubServiceVariant.rejected, (state, action) => {
-                state.isLoading = false;
-                state.error = action.error.message || 'Ошибка обновления варианта';
-            });
-
-        // updateSubServiceOrder
-        builder
-            .addCase(updateSubServiceOrder.pending, (state) => {
-                state.isLoading = true;
-                state.error = null;
-            })
-            .addCase(updateSubServiceOrder.fulfilled, (state) => {
-                state.isLoading = false;
-                // Обновляем порядок в локальном состоянии
-                // Порядок будет обновлен при следующей загрузке данных
-            })
-            .addCase(updateSubServiceOrder.rejected, (state, action) => {
-                state.isLoading = false;
-                state.error = action.error.message || 'Ошибка обновления порядка комплектаций';
             });
 
         // deleteSubServiceVariant
         builder
-            .addCase(deleteSubServiceVariant.pending, (state) => {
-                state.isLoading = true;
-                state.error = null;
-            })
             .addCase(deleteSubServiceVariant.fulfilled, (state, action) => {
-                state.isLoading = false;
                 const { subServiceId, variantId } = action.payload;
                 const subService = state.subServices.find(s => s.id === subServiceId);
                 if (subService) {
                     subService.variants = subService.variants.filter(v => v.id !== variantId);
                 }
-                if (state.currentSubService && state.currentSubService.id === subServiceId) {
+                if (state.currentSubService?.id === subServiceId) {
                     state.currentSubService.variants = state.currentSubService.variants.filter(v => v.id !== variantId);
                 }
-            })
-            .addCase(deleteSubServiceVariant.rejected, (state, action) => {
-                state.isLoading = false;
-                state.error = action.error.message || 'Ошибка удаления варианта';
+            });
+
+        // updateSubServiceOrder
+        builder
+            .addCase(updateSubServiceOrder.fulfilled, (state, action) => {
+                // Обновляем порядок в state
+                action.payload.subServices.forEach((updatedSubService: SubService) => {
+                    const index = state.subServices.findIndex(s => s.id === updatedSubService.id);
+                    if (index !== -1) {
+                        state.subServices[index] = updatedSubService;
+                    }
+                });
             });
     },
 });

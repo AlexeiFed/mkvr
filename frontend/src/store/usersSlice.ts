@@ -8,6 +8,7 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { User } from '../types';
+import { api } from '../services/api';
 
 export interface UsersState {
     users: User[];
@@ -44,26 +45,23 @@ export const fetchUsers = createAsyncThunk(
         Object.entries(filters).forEach(([key, value]) => {
             if (value !== undefined && value !== null) params.append(key, String(value));
         });
-        const response = await fetch(`http://localhost:3001/api/users?${params.toString()}`);
-        if (!response.ok) throw new Error('Ошибка получения пользователей');
-        return await response.json();
+        const response = await api.get(`/users?${params.toString()}`);
+        return response.data;
     }
 );
 
 export const fetchUserById = createAsyncThunk(
     'users/fetchUserById',
     async (id: number) => {
-        const response = await fetch(`http://localhost:3001/api/users/${id}`);
-        if (!response.ok) throw new Error('Ошибка получения пользователя');
-        return (await response.json()).user;
+        const response = await api.get(`/users/${id}`);
+        return response.data.user;
     }
 );
 
 export const deleteUser = createAsyncThunk(
     'users/deleteUser',
     async (id: number) => {
-        const response = await fetch(`http://localhost:3001/api/users/${id}`, { method: 'DELETE' });
-        if (!response.ok) throw new Error('Ошибка удаления пользователя');
+        await api.delete(`/users/${id}`);
         return id;
     }
 );

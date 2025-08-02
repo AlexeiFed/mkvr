@@ -9,6 +9,7 @@ import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import { addSubServiceToService, updateSubServiceInService, removeSubServiceFromService } from './actions';
 import { updateSubServiceOrder } from './subServicesSlice';
+import { api } from '../services/api';
 
 // Типы
 export interface SubServiceVariant {
@@ -79,114 +80,41 @@ const initialState: ServicesState = {
 // Async thunks
 export const fetchServices = createAsyncThunk(
     'services/fetchServices',
-    async (_, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch('http://localhost:3001/api/services', {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка получения услуг');
-        }
-
-        return response.json();
+    async () => {
+        const response = await api.get('/services');
+        return response.data;
     }
 );
 
 export const fetchServiceById = createAsyncThunk(
     'services/fetchServiceById',
-    async (serviceId: number, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch(`http://localhost:3001/api/services/${serviceId}`, {
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка получения услуги');
-        }
-
-        return response.json();
+    async (serviceId: number) => {
+        const response = await api.get(`/services/${serviceId}`);
+        return response.data;
     }
 );
 
 export const createService = createAsyncThunk(
     'services/createService',
-    async (serviceData: CreateServiceData, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch('http://localhost:3001/api/services', {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(serviceData),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка создания услуги');
-        }
-
-        return response.json();
+    async (serviceData: CreateServiceData) => {
+        const response = await api.post('/services', serviceData);
+        return response.data;
     }
 );
 
 export const updateService = createAsyncThunk(
     'services/updateService',
-    async (serviceData: UpdateServiceData, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
+    async (serviceData: UpdateServiceData) => {
         const { id, ...updateData } = serviceData;
-
-        const response = await fetch(`http://localhost:3001/api/services/${id}`, {
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(updateData),
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка обновления услуги');
-        }
-
-        return response.json();
+        const response = await api.put(`/services/${id}`, updateData);
+        return response.data;
     }
 );
 
 export const deleteService = createAsyncThunk(
     'services/deleteService',
-    async (serviceId: number, { getState }) => {
-        const state = getState() as { auth: { token: string } };
-        const token = state.auth.token;
-
-        const response = await fetch(`http://localhost:3001/api/services/${serviceId}`, {
-            method: 'DELETE',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-            },
-        });
-
-        if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Ошибка удаления услуги');
-        }
-
+    async (serviceId: number) => {
+        await api.delete(`/services/${serviceId}`);
         return serviceId;
     }
 );
