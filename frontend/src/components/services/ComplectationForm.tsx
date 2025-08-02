@@ -1,537 +1,468 @@
 /**
  * @file: ComplectationForm.tsx
- * @description: Форма для создания и редактирования комплектации
- * @dependencies: react, react-redux, @mui/material, react-hook-form
- * @created: 2024-07-07
+ * @description: Форма создания и редактирования комплектаций с поддержкой медиа файлов
+ * @dependencies: React, MUI, react-hook-form, FileUpload
+ * @created: 2025-01-12
  */
 
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { useForm, Controller } from 'react-hook-form';
+import React, { useState, useEffect } from 'react';
 import {
-    Box,
     Card,
     CardContent,
     Typography,
-    TextField,
+    Box,
     Button,
-    Alert,
-    CircularProgress,
+    TextField,
+    FormControl,
+    InputLabel,
+    Select,
+    MenuItem,
     Switch,
     FormControlLabel,
-    Accordion,
-    AccordionSummary,
-    AccordionDetails,
-    IconButton,
+    CircularProgress,
+    Alert
 } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, ExpandMore as ExpandMoreIcon, Delete as DeleteIcon, Add as AddIcon } from '@mui/icons-material';
-import { createSubService, updateSubService, clearError } from '../../store/subServicesSlice';
-import { addSubServiceToService, updateSubServiceInService } from '../../store/actions';
+import { useForm, Controller } from 'react-hook-form';
 import FileUpload from '../common/FileUpload';
-import { uploadPhotosToServer } from '../../utils/fileUpload';
-import type { RootState, AppDispatch } from '../../store';
-import type { SubService, CreateSubServiceData, CreateSubServiceVariantData } from '../../store/subServicesSlice';
+import { uploadFileToServer, uploadPhotosToServer } from '../../utils/fileUpload';
+import type { SubService } from '../../store/subServicesSlice';
 
 interface ComplectationFormProps {
     subService?: SubService;
     serviceId?: number;
+    services: Array<{ id: number; name: string }>;
     onCancel: () => void;
     onSuccess: () => void;
+}
+
+interface CreateSubServiceData {
+    name: string;
+    description?: string;
+    avatar?: string;
+    photos?: string[];
+    video?: string;
+    serviceId: number;
+    minAge: number;
+    price?: number;
+    variants?: CreateSubServiceVariantData[];
+}
+
+interface CreateSubServiceVariantData {
+    name: string;
+    description?: string;
+    price: number;
+    avatar?: string;
+    photos: string[];
+    video?: string;
+    order: number;
+    isActive: boolean;
 }
 
 const ComplectationForm: React.FC<ComplectationFormProps> = ({
     subService,
     serviceId,
+    services,
     onCancel,
-    onSuccess,
+    onSuccess
 }) => {
-    const dispatch = useDispatch<AppDispatch>();
-    const { isLoading } = useSelector((state: RootState) => state.subServices);
-
+    const [isLoading, setIsLoading] = useState(false);
     const [isUploading, setIsUploading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [avatarFile, setAvatarFile] = useState<File | null>(null);
+    const [allPhotos, setAllPhotos] = useState<(File | string)[]>([]);
+    const [videoFile, setVideoFile] = useState<File | null>(null);
+
+    const defaultValues = {
+        name: subService?.name || '',
+        description: subService?.description || '',
+        avatar: subService?.avatar || '',
+        photos: subService?.photos || [],
+        video: subService?.video || '',
+        serviceId: serviceId || subService?.serviceId || 0,
+        minAge: subService?.minAge || 0,
+        price: subService?.price || 0,
+        variants: subService?.variants || []
+    };
 
     const {
         control,
         handleSubmit,
-        reset,
         watch,
         setValue,
+        reset,
         formState: { errors }
     } = useForm<CreateSubServiceData>({
-        defaultValues: {
-            name: subService?.name || '',
-            serviceId: serviceId || subService?.serviceId || 0,
-            minAge: subService?.minAge || 0,
-            hasVariants: subService?.variants && subService.variants.length > 0,
-            price: subService?.price || 0,
-            variants: subService?.variants || []
-        }
+        defaultValues
     });
 
-    // Сброс формы при изменении subService
+    const watchedVariants = watch('variants');
+
     useEffect(() => {
         if (subService) {
             reset({
                 name: subService.name,
+                description: subService.description,
+                avatar: subService.avatar,
+                photos: subService.photos,
+                video: subService.video,
                 serviceId: subService.serviceId,
                 minAge: subService.minAge,
-                hasVariants: subService.variants && subService.variants.length > 0,
                 price: subService.price,
                 variants: subService.variants
             });
-        } else {
-            reset({
-                name: '',
-                serviceId: serviceId || 0,
-                minAge: 0,
-                hasVariants: false,
-                price: 0,
-                variants: []
-            });
         }
-    }, [subService, serviceId, reset]);
-
-    useEffect(() => {
-        return () => {
-            dispatch(clearError());
-        };
-    }, [dispatch]);
+    }, [subService, reset]);
 
     const onSubmit = async (data: CreateSubServiceData) => {
         try {
             setIsUploading(true);
+            setError(null);
 
-            // Отправляем только url (строки), не File
+            // Загружаем файлы на сервер
+            let avatarUrl = data.avatar || '';
+            let photoUrls: string[] = [];
+            let videoUrl = data.video || '';
+
+            if (avatarFile && token) {
+                try {
+                    avatarUrl = await uploadFileToServer(avatarFile, `${import.meta.env.VITE_API_URL}/upload/avatar`, token);
+                } catch (error) {
+                    console.error('Ошибка загрузки аватарки:', error);
+                }
+            }
+
+            // Загружаем фотографии
+            const newFiles = allPhotos.filter(f => f instanceof File) as File[];
+            const oldUrls = allPhotos.filter(f => typeof f === 'string') as string[];
+            if (newFiles.length > 0 && token) {
+                const uploadedUrls = await uploadPhotosToServer(newFiles, `${import.meta.env.VITE_API_URL}/upload/photos`, token);
+                photoUrls = [...oldUrls, ...uploadedUrls];
+            } else {
+                photoUrls = oldUrls;
+            }
+
+            // Загружаем видео
+            if (videoFile && token) {
+                try {
+                    videoUrl = await uploadFileToServer(videoFile, `${import.meta.env.VITE_API_URL}/upload/video`, token);
+                } catch (error) {
+                    console.error('Ошибка загрузки видео:', error);
+                }
+            }
+
             const submitData: CreateSubServiceData = {
                 ...data,
+                avatar: avatarUrl,
+                photos: photoUrls,
+                video: videoUrl,
                 serviceId: serviceId || data.serviceId,
                 minAge: Number(data.minAge),
-                hasVariants: data.hasVariants,
-                price: Number(data.price) || 0, // Добавляем поле price
+                price: Number(data.price) || 0,
                 variants: data.variants || []
             };
 
             if (subService) {
-                const result = await dispatch(updateSubService({ ...submitData, id: subService.id }));
-                if (result.payload) {
-                    // Синхронизируем с servicesSlice
-                    dispatch(updateSubServiceInService({
-                        serviceId: serviceId || data.serviceId,
-                        subService: result.payload.subService
-                    }));
+                // Обновление
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/subServices/${subService.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(submitData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Ошибка обновления комплектации');
                 }
             } else {
-                const result = await dispatch(createSubService(submitData));
-                if (result.payload) {
-                    // Синхронизируем с servicesSlice
-                    dispatch(addSubServiceToService({
-                        serviceId: serviceId || data.serviceId,
-                        subService: result.payload.subService
-                    }));
-                } else {
-                    console.error('Не удалось получить payload из результата создания');
+                // Создание
+                const response = await fetch(`${import.meta.env.VITE_API_URL}/subServices`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(submitData)
+                });
+
+                if (!response.ok) {
+                    throw new Error('Ошибка создания комплектации');
                 }
             }
 
-            // Убираем задержку и сразу вызываем onSuccess
             onSuccess();
         } catch (error) {
-            console.error('Ошибка сохранения комплектации:', error);
-            // Показываем более подробную информацию об ошибке
-            if (error instanceof Error) {
-                setError(error.message);
-            } else {
-                setError('Не удалось сохранить комплектацию.');
-            }
+            console.error('Ошибка:', error);
+            setError(error instanceof Error ? error.message : 'Произошла ошибка');
         } finally {
             setIsUploading(false);
         }
     };
 
+    const token = localStorage.getItem('token');
+
     return (
-        <Box sx={{ p: 3 }}>
-            <Box display="flex" alignItems="center" mb={3}>
-                <Button
-                    startIcon={<ArrowBackIcon />}
-                    onClick={onCancel}
-                    sx={{ mr: 2 }}
-                >
-                    Назад
-                </Button>
-                <Typography variant="h4" component="h1">
-                    {subService ? 'Редактирование комплектации' : 'Создание комплектации'}
+        <Card>
+            <CardContent>
+                <Typography variant="h5" gutterBottom>
+                    {subService ? 'Редактировать комплектацию' : 'Создать комплектацию'}
                 </Typography>
-            </Box>
 
-            <Card>
-                <CardContent>
-                    {error && (
-                        <Alert severity="error" sx={{ mb: 2 }}>
-                            {error}
-                        </Alert>
-                    )}
+                {error && (
+                    <Alert severity="error" sx={{ mb: 2 }}>
+                        {error}
+                    </Alert>
+                )}
 
-                    <form onSubmit={handleSubmit(onSubmit)}>
-                        <Box display="flex" flexDirection="column" gap={3}>
-                            <Box>
+                <Box component="form" onSubmit={handleSubmit(onSubmit)} sx={{ mt: 2 }}>
+                    <Controller
+                        name="name"
+                        control={control}
+                        rules={{ required: 'Название обязательно' }}
+                        render={({ field }) => (
+                            <TextField
+                                {...field}
+                                label="Название комплектации"
+                                fullWidth
+                                margin="normal"
+                                error={!!errors.name}
+                                helperText={errors.name?.message}
+                            />
+                        )}
+                    />
+
+                    <Controller
+                        name="description"
+                        control={control}
+                        render={({ field }) => (
+                            <TextField
+                                {...field}
+                                label="Описание"
+                                fullWidth
+                                margin="normal"
+                                multiline
+                                rows={3}
+                            />
+                        )}
+                    />
+
+                    <Controller
+                        name="minAge"
+                        control={control}
+                        rules={{ required: 'Минимальный возраст обязателен' }}
+                        render={({ field }) => (
+                            <TextField
+                                {...field}
+                                label="Минимальный возраст"
+                                type="number"
+                                fullWidth
+                                margin="normal"
+                                error={!!errors.minAge}
+                                helperText={errors.minAge?.message}
+                            />
+                        )}
+                    />
+
+                    <Controller
+                        name="price"
+                        control={control}
+                        render={({ field }) => (
+                            <TextField
+                                {...field}
+                                label="Цена (₽)"
+                                type="number"
+                                fullWidth
+                                margin="normal"
+                            />
+                        )}
+                    />
+
+                    {/* Медиа файлы для основной комплектации */}
+                    <Box sx={{ mt: 3 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Медиа файлы
+                        </Typography>
+
+                        {/* Аватар */}
+                        <Box sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                                Аватар
+                            </Typography>
+                            <FileUpload
+                                accept="image/*"
+                                multiple={false}
+                                maxFiles={1}
+                                maxSize={10 * 1024 * 1024}
+                                label="Загрузить аватар"
+                                onChange={() => {}}
+                                onFilesChange={(files) => {
+                                    if (files.length > 0) {
+                                        setAvatarFile(files[0]);
+                                    }
+                                }}
+                                disabled={isLoading || isUploading}
+                                isLoading={isUploading}
+                            />
+                        </Box>
+
+                        {/* Фотографии */}
+                        <Box sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                                Фотографии
+                            </Typography>
+                            <FileUpload
+                                accept="image/*"
+                                multiple={true}
+                                maxFiles={10}
+                                maxSize={10 * 1024 * 1024}
+                                label="Загрузить фотографии"
+                                onChange={() => {}}
+                                onFilesChange={(files) => {
+                                    setAllPhotos(prev => [...prev, ...files]);
+                                }}
+                                disabled={isLoading || isUploading}
+                                isLoading={isUploading}
+                            />
+                        </Box>
+
+                        {/* Видео */}
+                        <Box sx={{ mb: 2 }}>
+                            <Typography variant="subtitle2" gutterBottom>
+                                Видео
+                            </Typography>
+                            <FileUpload
+                                accept="video/*"
+                                multiple={false}
+                                maxFiles={1}
+                                maxSize={50 * 1024 * 1024}
+                                label="Загрузить видео"
+                                onChange={() => {}}
+                                onFilesChange={(files) => {
+                                    if (files.length > 0) {
+                                        setVideoFile(files[0]);
+                                    }
+                                }}
+                                disabled={isLoading || isUploading}
+                                isLoading={isUploading}
+                            />
+                        </Box>
+                    </Box>
+
+                    {/* Варианты */}
+                    <Box sx={{ mt: 3 }}>
+                        <Typography variant="h6" gutterBottom>
+                            Варианты комплектации
+                        </Typography>
+
+                        {watchedVariants?.map((variant, index) => (
+                            <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
+                                <Typography variant="subtitle1" gutterBottom>
+                                    Вариант {index + 1}
+                                </Typography>
+
                                 <Controller
-                                    name="name"
+                                    name={`variants.${index}.name`}
                                     control={control}
-                                    rules={{
-                                        required: 'Название обязательно',
-                                        minLength: {
-                                            value: 2,
-                                            message: 'Название должно содержать минимум 2 символа',
-                                        },
-                                    }}
+                                    rules={{ required: 'Название варианта обязательно' }}
                                     render={({ field }) => (
                                         <TextField
                                             {...field}
-                                            label="Название комплектации"
+                                            label="Название варианта"
                                             fullWidth
-                                            error={!!errors.name}
-                                            helperText={errors.name?.message}
-                                            disabled={isLoading}
+                                            margin="normal"
                                         />
                                     )}
                                 />
-                            </Box>
 
-                            <Box>
                                 <Controller
-                                    name="minAge"
+                                    name={`variants.${index}.description`}
                                     control={control}
-                                    rules={{
-                                        required: 'Минимальный возраст обязателен',
-                                        min: {
-                                            value: 0,
-                                            message: 'Возраст не может быть отрицательным',
-                                        },
-                                    }}
                                     render={({ field }) => (
                                         <TextField
                                             {...field}
-                                            label="Минимальный возраст"
+                                            label="Описание варианта"
+                                            fullWidth
+                                            margin="normal"
+                                            multiline
+                                            rows={2}
+                                        />
+                                    )}
+                                />
+
+                                <Controller
+                                    name={`variants.${index}.price`}
+                                    control={control}
+                                    render={({ field }) => (
+                                        <TextField
+                                            {...field}
+                                            label="Цена варианта (₽)"
                                             type="number"
                                             fullWidth
-                                            error={!!errors.minAge}
-                                            helperText={errors.minAge?.message}
-                                            disabled={isLoading}
+                                            margin="normal"
                                         />
                                     )}
                                 />
-                            </Box>
 
-                            <Box>
                                 <Controller
-                                    name="hasVariants"
+                                    name={`variants.${index}.isActive`}
                                     control={control}
                                     render={({ field }) => (
                                         <FormControlLabel
                                             control={
                                                 <Switch
                                                     checked={field.value}
-                                                    onChange={(e) => {
-                                                        field.onChange(e.target.checked);
-                                                        // Если включаем варианты и их нет, добавляем первый
-                                                        if (e.target.checked) {
-                                                            const currentVariants = watch('variants') || [];
-                                                            if (currentVariants.length === 0) {
-                                                                const newVariant: CreateSubServiceVariantData = {
-                                                                    name: '',
-                                                                    price: 0,
-                                                                    media: [],
-                                                                    videos: [],
-                                                                    isActive: true
-                                                                };
-                                                                setValue('variants', [newVariant]);
-                                                            }
-                                                        }
-                                                    }}
-                                                    disabled={isLoading}
+                                                    onChange={field.onChange}
                                                 />
                                             }
-                                            label="Есть варианты комплектации"
+                                            label="Активный вариант"
                                         />
                                     )}
                                 />
                             </Box>
+                        ))}
 
-                            {/* Поле цены отображается только если нет вариантов */}
-                            {!watch('hasVariants') && (
-                                <Box>
-                                    <Controller
-                                        name="price"
-                                        control={control}
-                                        rules={{
-                                            required: 'Цена обязательна',
-                                            min: {
-                                                value: 0,
-                                                message: 'Цена не может быть отрицательной',
-                                            },
-                                        }}
-                                        render={({ field }) => (
-                                            <TextField
-                                                {...field}
-                                                label="Цена (₽)"
-                                                type="number"
-                                                fullWidth
-                                                error={!!errors.price}
-                                                helperText={errors.price?.message}
-                                                disabled={isLoading}
-                                            />
-                                        )}
-                                    />
-                                </Box>
-                            )}
+                        <Button
+                            variant="outlined"
+                            onClick={() => {
+                                const newVariant: CreateSubServiceVariantData = {
+                                    name: '',
+                                    description: '',
+                                    price: 0,
+                                    avatar: '',
+                                    photos: [],
+                                    video: '',
+                                    order: 0,
+                                    isActive: true
+                                };
+                                setValue('variants', [...(watchedVariants || []), newVariant]);
+                            }}
+                            sx={{ mt: 1 }}
+                        >
+                            Добавить вариант
+                        </Button>
+                    </Box>
 
-                            <Controller
-                                name="variants"
-                                control={control}
-                                render={({ field }) => {
-                                    const hasVariants = watch('hasVariants');
-                                    return (
-                                        <Accordion expanded={hasVariants} disabled={!hasVariants || isLoading}>
-                                            <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                                                <Typography variant="subtitle1">
-                                                    Варианты комплектации ({field.value?.length || 0})
-                                                </Typography>
-                                            </AccordionSummary>
-                                            <AccordionDetails>
-                                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                    {field.value?.map((variant, index) => (
-                                                        <Card key={index} sx={{ p: 2 }}>
-                                                            <Box sx={{ display: 'flex', gap: 2, alignItems: 'flex-start' }}>
-                                                                <Box sx={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 2 }}>
-                                                                    <TextField
-                                                                        label="Название варианта"
-                                                                        value={variant.name}
-                                                                        onChange={(e) => {
-                                                                            const newVariants = [...(field.value || [])];
-                                                                            newVariants[index] = { ...variant, name: e.target.value };
-                                                                            field.onChange(newVariants);
-                                                                        }}
-                                                                        fullWidth
-                                                                    />
-                                                                    <TextField
-                                                                        label="Цена (₽)"
-                                                                        type="number"
-                                                                        value={variant.price}
-                                                                        onChange={(e) => {
-                                                                            const newVariants = [...(field.value || [])];
-                                                                            newVariants[index] = { ...variant, price: Number(e.target.value) };
-                                                                            field.onChange(newVariants);
-                                                                        }}
-                                                                        fullWidth
-                                                                    />
-                                                                    <FormControlLabel
-                                                                        control={
-                                                                            <Switch
-                                                                                checked={variant.isActive}
-                                                                                onChange={(e) => {
-                                                                                    const newVariants = [...(field.value || [])];
-                                                                                    newVariants[index] = { ...variant, isActive: e.target.checked };
-                                                                                    field.onChange(newVariants);
-                                                                                }}
-                                                                            />
-                                                                        }
-                                                                        label="Активный вариант"
-                                                                    />
-                                                                    <Box>
-                                                                        <Typography variant="subtitle2" gutterBottom>
-                                                                            Медиа файлы
-                                                                        </Typography>
-                                                                        <FileUpload
-                                                                            accept="image/*"
-                                                                            multiple={true}
-                                                                            maxFiles={10}
-                                                                            maxSize={5 * 1024 * 1024} // 5MB
-                                                                            label="Загрузить изображения"
-                                                                            onChange={async (urls) => {
-                                                                                const newVariants = [...(field.value || [])];
-                                                                                newVariants[index] = { ...variant, media: urls };
-                                                                                field.onChange(newVariants);
-                                                                            }}
-                                                                            onFilesChange={async (files) => {
-                                                                                if (files.length > 0) {
-                                                                                    try {
-                                                                                        setIsUploading(true);
-                                                                                        const token = localStorage.getItem('token');
-                                                                                        if (!token) throw new Error('Токен не найден');
-
-                                                                                        const urls = await uploadPhotosToServer(files, `${import.meta.env.VITE_API_URL}/upload/photos`, token);
-                                                                                        const newVariants = [...(field.value || [])];
-                                                                                        const existingPhotos = variant.media || [];
-                                                                                        newVariants[index] = { ...variant, media: [...existingPhotos, ...urls] };
-                                                                                        field.onChange(newVariants);
-                                                                                    } catch (error) {
-                                                                                        console.error('Ошибка загрузки фото:', error);
-                                                                                        setError('Ошибка загрузки фото');
-                                                                                    } finally {
-                                                                                        setIsUploading(false);
-                                                                                    }
-                                                                                }
-                                                                            }}
-                                                                            disabled={isLoading || isUploading}
-                                                                            isLoading={isUploading}
-                                                                            hidePreview={true}
-                                                                        />
-                                                                        {variant.media && variant.media.length > 0 && (
-                                                                            <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                                                                {variant.media.map((photo, photoIndex) => (
-                                                                                    <Box key={photoIndex} sx={{ position: 'relative' }}>
-                                                                                        <img
-                                                                                            src={photo.startsWith('http') ? photo : `${import.meta.env.VITE_API_URL.replace('/api', '')}${photo}`}
-                                                                                            alt={`Фото ${photoIndex + 1}`}
-                                                                                            style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4 }}
-                                                                                        />
-                                                                                        <Button
-                                                                                            variant="contained"
-                                                                                            color="error"
-                                                                                            size="small"
-                                                                                            onClick={() => {
-                                                                                                const newVariants = [...(field.value || [])];
-                                                                                                const newPhotos = [...(variant.media || [])];
-                                                                                                newPhotos.splice(photoIndex, 1);
-                                                                                                newVariants[index] = { ...variant, media: newPhotos };
-                                                                                                field.onChange(newVariants);
-                                                                                            }}
-                                                                                            sx={{ position: 'absolute', top: 0, right: 0, minWidth: 0, width: 20, height: 20, fontSize: '12px' }}
-                                                                                        >
-                                                                                            ×
-                                                                                        </Button>
-                                                                                    </Box>
-                                                                                ))}
-                                                                            </Box>
-                                                                        )}
-                                                                    </Box>
-                                                                    <Box>
-                                                                        <Typography variant="subtitle2" gutterBottom>
-                                                                            Видео файлы
-                                                                        </Typography>
-                                                                        <FileUpload
-                                                                            accept="video/*"
-                                                                            multiple={true}
-                                                                            maxFiles={5}
-                                                                            maxSize={50 * 1024 * 1024} // 50MB
-                                                                            label="Загрузить видео"
-                                                                            onChange={async (urls) => {
-                                                                                const newVariants = [...(field.value || [])];
-                                                                                newVariants[index] = { ...variant, videos: urls };
-                                                                                field.onChange(newVariants);
-                                                                            }}
-                                                                            onFilesChange={async (files) => {
-                                                                                if (files.length > 0) {
-                                                                                    try {
-                                                                                        setIsUploading(true);
-                                                                                        const token = localStorage.getItem('token');
-                                                                                        if (!token) throw new Error('Токен не найден');
-
-                                                                                        const urls = await uploadPhotosToServer(files, `${import.meta.env.VITE_API_URL}/upload/videos`, token);
-                                                                                        const newVariants = [...(field.value || [])];
-                                                                                        const existingVideos = variant.videos || [];
-                                                                                        newVariants[index] = { ...variant, videos: [...existingVideos, ...urls] };
-                                                                                        field.onChange(newVariants);
-                                                                                    } catch (error) {
-                                                                                        console.error('Ошибка загрузки видео:', error);
-                                                                                        setError('Ошибка загрузки видео');
-                                                                                    } finally {
-                                                                                        setIsUploading(false);
-                                                                                    }
-                                                                                }
-                                                                            }}
-                                                                            disabled={isLoading || isUploading}
-                                                                            isLoading={isUploading}
-                                                                            hidePreview={true}
-                                                                        />
-                                                                        {variant.videos && variant.videos.length > 0 && (
-                                                                            <Box sx={{ mt: 1, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                                                                {variant.videos.map((video, videoIndex) => (
-                                                                                    <Box key={videoIndex} sx={{ position: 'relative' }}>
-                                                                                        <video
-                                                                                            src={video.startsWith('http') ? video : `${import.meta.env.VITE_API_URL.replace('/api', '')}${video}`}
-                                                                                            style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 4 }}
-                                                                                            controls
-                                                                                        />
-                                                                                        <Button
-                                                                                            variant="contained"
-                                                                                            color="error"
-                                                                                            size="small"
-                                                                                            onClick={() => {
-                                                                                                const newVariants = [...(field.value || [])];
-                                                                                                const newVideos = [...(variant.videos || [])];
-                                                                                                newVideos.splice(videoIndex, 1);
-                                                                                                newVariants[index] = { ...variant, videos: newVideos };
-                                                                                                field.onChange(newVariants);
-                                                                                            }}
-                                                                                            sx={{ position: 'absolute', top: 0, right: 0, minWidth: 0, width: 20, height: 20, fontSize: '12px' }}
-                                                                                        >
-                                                                                            ×
-                                                                                        </Button>
-                                                                                    </Box>
-                                                                                ))}
-                                                                            </Box>
-                                                                        )}
-                                                                    </Box>
-                                                                </Box>
-                                                                <IconButton
-                                                                    color="error"
-                                                                    onClick={() => {
-                                                                        const newVariants = (field.value || []).filter((_, i) => i !== index);
-                                                                        field.onChange(newVariants);
-                                                                    }}
-                                                                >
-                                                                    <DeleteIcon />
-                                                                </IconButton>
-                                                            </Box>
-                                                        </Card>
-                                                    ))}
-                                                    <Button
-                                                        startIcon={<AddIcon />}
-                                                        onClick={() => {
-                                                            const newVariant: CreateSubServiceVariantData = {
-                                                                name: '',
-                                                                price: 0,
-                                                                media: [],
-                                                                videos: [],
-                                                                isActive: true
-                                                            };
-                                                            field.onChange([...(field.value || []), newVariant]);
-                                                        }}
-                                                        variant="outlined"
-                                                    >
-                                                        Добавить вариант
-                                                    </Button>
-                                                </Box>
-                                            </AccordionDetails>
-                                        </Accordion>
-                                    );
-                                }}
-                            />
-
-                            <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end' }}>
-                                <Button
-                                    variant="outlined"
-                                    onClick={onCancel}
-                                    disabled={isLoading || isUploading}
-                                >
-                                    Отмена
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    variant="contained"
-                                    disabled={isLoading || isUploading}
-                                    startIcon={isLoading || isUploading ? <CircularProgress size={20} /> : null}
-                                >
-                                    {subService ? 'Обновить' : 'Создать'}
-                                </Button>
-                            </Box>
-                        </Box>
-                    </form>
-                </CardContent>
-            </Card>
-        </Box>
+                    <Box sx={{ display: 'flex', gap: 2, justifyContent: 'flex-end', mt: 3 }}>
+                        <Button
+                            variant="outlined"
+                            onClick={onCancel}
+                            disabled={isLoading || isUploading}
+                        >
+                            Отмена
+                        </Button>
+                        <Button
+                            type="submit"
+                            variant="contained"
+                            disabled={isLoading || isUploading}
+                            startIcon={isLoading || isUploading ? <CircularProgress size={20} /> : null}
+                        >
+                            {subService ? 'Обновить' : 'Создать'}
+                        </Button>
+                    </Box>
+                </Box>
+            </CardContent>
+        </Card>
     );
 };
 

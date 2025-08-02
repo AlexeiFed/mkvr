@@ -13,9 +13,12 @@ import { api } from '../services/api';
 export interface SubServiceVariant {
     id?: number;
     name: string;
+    description?: string;
     price: number;
-    media: string[];
-    videos: string[];
+    avatar?: string;
+    photos: string[];
+    video?: string;
+    order: number;
     isActive: boolean;
 }
 
@@ -23,44 +26,52 @@ export interface SubService {
     id: number;
     serviceId: number;
     name: string;
+    description?: string;
+    avatar?: string;
+    photos: string[];
+    video?: string;
     minAge: number;
     order?: number;
     isActive: boolean;
     price: number; // Цена для комплектаций без вариантов
     createdAt: string;
     updatedAt: string;
-    service?: {
-        id: number;
-        name: string;
-        description?: string;
-    };
-    variants: SubServiceVariant[];
+    variants?: SubServiceVariant[];
 }
 
 export interface CreateSubServiceData {
     name: string;
+    description?: string;
+    avatar?: string;
+    photos?: string[];
+    video?: string;
     serviceId: number;
     minAge: number;
-    hasVariants?: boolean;
     price?: number; // Цена для комплектаций без вариантов
     variants?: CreateSubServiceVariantData[];
 }
 
 export interface CreateSubServiceVariantData {
     name: string;
+    description?: string;
     price: number;
-    media: string[];
-    videos: string[];
+    avatar?: string;
+    photos: string[];
+    video?: string;
+    order: number;
     isActive: boolean;
 }
 
 export interface UpdateSubServiceData {
     id: number;
     name?: string;
+    description?: string;
+    avatar?: string;
+    photos?: string[];
+    video?: string;
     serviceId?: number;
     isActive?: boolean;
     minAge?: number;
-    hasVariants?: boolean;
     price?: number; // Цена для комплектаций без вариантов
     variants?: CreateSubServiceVariantData[];
 }
@@ -210,11 +221,20 @@ const subServicesSlice = createSlice({
             })
             .addCase(fetchSubServiceById.fulfilled, (state, action) => {
                 state.isLoading = false;
-                state.currentSubService = action.payload.subService;
+                const subService = action.payload.subService;
+                if (subService.variants && subService.variants.length > 0) {
+                    const updatedVariants = subService.variants.map((variant: SubServiceVariant) => ({
+                        ...variant,
+                        id: variant.id || undefined
+                    }));
+                    state.currentSubService = { ...subService, variants: updatedVariants };
+                } else {
+                    state.currentSubService = subService;
+                }
             })
             .addCase(fetchSubServiceById.rejected, (state, action) => {
                 state.isLoading = false;
-                state.error = action.error.message || 'Ошибка получения комплектации';
+                state.error = action.error.message || 'Ошибка загрузки комплектации';
             });
 
         // fetchSubServicesByService
@@ -240,7 +260,16 @@ const subServicesSlice = createSlice({
             })
             .addCase(createSubService.fulfilled, (state, action) => {
                 state.isLoading = false;
-                state.subServices.push(action.payload.subService);
+                const subService = action.payload.subService;
+                if (subService.variants && subService.variants.length > 0) {
+                    const updatedVariants = subService.variants.map((variant: SubServiceVariant) => ({
+                        ...variant,
+                        id: variant.id || undefined
+                    }));
+                    state.currentSubService = { ...subService, variants: updatedVariants };
+                } else {
+                    state.currentSubService = subService;
+                }
             })
             .addCase(createSubService.rejected, (state, action) => {
                 state.isLoading = false;
@@ -255,12 +284,15 @@ const subServicesSlice = createSlice({
             })
             .addCase(updateSubService.fulfilled, (state, action) => {
                 state.isLoading = false;
-                const index = state.subServices.findIndex(s => s.id === action.payload.subService.id);
-                if (index !== -1) {
-                    state.subServices[index] = action.payload.subService;
-                }
-                if (state.currentSubService?.id === action.payload.subService.id) {
-                    state.currentSubService = action.payload.subService;
+                const subService = action.payload.subService;
+                if (subService.variants && subService.variants.length > 0) {
+                    const updatedVariants = subService.variants.map((variant: SubServiceVariant) => ({
+                        ...variant,
+                        id: variant.id || undefined
+                    }));
+                    state.currentSubService = { ...subService, variants: updatedVariants };
+                } else {
+                    state.currentSubService = subService;
                 }
             })
             .addCase(updateSubService.rejected, (state, action) => {

@@ -15,4 +15,6 @@ declare module 'express-serve-static-core' {
   }
 }
 
-export {}; 
+export interface AuthenticatedRequest extends Request {
+  user?: any;
+} 

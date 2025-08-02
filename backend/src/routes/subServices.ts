@@ -7,6 +7,7 @@
 
 import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
+import type { AuthenticatedRequest } from '../types/express';
 
 const router = Router();
 const prisma = new PrismaClient();
@@ -109,136 +110,106 @@ router.get('/:id', async (req: Request, res: Response) => {
 });
 
 // Создать комплектацию
-router.post('/', async (req: Request, res: Response) => {
+router.post('/', async (req: AuthenticatedRequest, res: Response) => {
     try {
-        const { name, serviceId, minAge, order, variants, price } = req.body;
+        const { name, description, avatar, photos, video, serviceId, minAge, price, variants } = req.body;
 
-        if (!name) {
-            res.status(400).json({ success: false, error: 'Название обязательно' });
-            return;
-        }
+        const subServiceData = {
+            name,
+            description,
+            avatar,
+            photos: photos || [],
+            video,
+            serviceId,
+            minAge: minAge || 0,
+            price: price || 0,
+            isActive: true
+        };
 
-        if (!serviceId) {
-            res.status(400).json({ success: false, error: 'ID услуги обязателен' });
-            return;
-        }
-
-        const minAgeValue = minAge ? Number(minAge) : 0;
-        const orderValue = order ? Number(order) : 0;
-        const priceValue = price ? Number(price) : 0;
-
-        // Проверяем существование услуги
-        const service = await prisma.service.findUnique({
-            where: { id: Number(serviceId) },
-        });
-
-        if (!service) {
-            res.status(404).json({ success: false, error: 'Услуга не найдена' });
-            return;
-        }
-
-        // Создаем комплектацию с вариантами
         const subService = await prisma.subService.create({
-            data: {
-                name,
-                serviceId: Number(serviceId),
-                minAge: minAgeValue,
-                order: orderValue,
-                price: priceValue,
-                variants: {
-                    create: variants ? variants.map((variant: any) => ({
-                        name: variant.name,
-                        price: Number(variant.price) || 0,
-                        media: Array.isArray(variant.media) ? variant.media : [],
-                        videos: Array.isArray(variant.videos) ? variant.videos : [],
-                        isActive: variant.isActive !== false
-                    })) : []
-                }
-            },
+            data: subServiceData,
             include: {
-                service: true,
-                variants: {
-                    orderBy: { id: 'asc' }
-                }
-            },
-        });
-
-        res.status(201).json({ success: true, subService });
-    } catch (error) {
-        console.error('Ошибка создания комплектации:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при создании комплектации' });
-    }
-});
-
-// Обновить комплектацию
-router.put('/:id', async (req: Request, res: Response) => {
-    try {
-        const id = Number(req.params['id']);
-        const { name, serviceId, minAge, order, variants, price } = req.body;
-
-        if (isNaN(id)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID' });
-            return;
-        }
-
-        const updateData: any = {};
-        if (name !== undefined) updateData.name = name;
-        if (serviceId !== undefined) updateData.serviceId = Number(serviceId);
-        if (minAge !== undefined) updateData.minAge = Number(minAge);
-        if (order !== undefined) updateData.order = Number(order);
-        if (price !== undefined) updateData.price = Number(price);
-
-        const subService = await prisma.subService.update({
-            where: { id },
-            data: updateData,
-            include: {
-                service: true,
-                variants: {
-                    orderBy: { id: 'asc' }
-                }
+                variants: true
             }
         });
 
-        // Если переданы варианты, обновляем их
-        if (variants && Array.isArray(variants)) {
-            // Удаляем старые варианты
-            await prisma.subServiceVariant.deleteMany({
-                where: { subServiceId: id }
-            });
-
-            // Создаем новые варианты
-            if (variants.length > 0) {
-                await prisma.subServiceVariant.createMany({
-                    data: variants.map((variant: any) => ({
-                        subServiceId: id,
+        // Если есть варианты, создаем их
+        if (variants && variants.length > 0) {
+            for (const variant of variants) {
+                await prisma.subServiceVariant.create({
+                    data: {
                         name: variant.name,
-                        price: Number(variant.price) || 0,
-                        media: Array.isArray(variant.media) ? variant.media : [],
-                        videos: Array.isArray(variant.videos) ? variant.videos : [],
-                        isActive: variant.isActive !== false
-                    }))
+                        price: variant.price || 0,
+                        isActive: variant.isActive !== false,
+                        subServiceId: subService.id
+                    }
                 });
             }
-
-            // Получаем обновленную комплектацию с вариантами
-            const updatedSubService = await prisma.subService.findUnique({
-                where: { id },
-                include: {
-                    service: true,
-                    variants: {
-                        orderBy: { id: 'asc' }
-                    }
-                }
-            });
-
-            res.json({ success: true, subService: updatedSubService });
-            return;
         }
 
         res.json({ success: true, subService });
     } catch (error) {
+        console.error('Ошибка создания комплектации:', error);
+        res.status(500).json({ success: false, error: 'Ошибка создания комплектации' });
+    }
+});
+
+// Обновить комплектацию
+router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
+    try {
+        const { id } = req.params;
+        const { name, description, avatar, photos, video, serviceId, minAge, price, variants } = req.body;
+
+        const updateData: any = {
+            name,
+            description,
+            avatar,
+            photos: photos || [],
+            video,
+            serviceId,
+            minAge: minAge || 0,
+            price: price || 0
+        };
+
+        // Удаляем undefined поля
+        Object.keys(updateData).forEach(key => {
+            if (updateData[key] === undefined) {
+                delete updateData[key];
+            }
+        });
+
+        const updatedSubService = await prisma.subService.update({
+            where: { id: Number(id) },
+            data: updateData,
+            include: {
+                variants: true
+            }
+        });
+
+        // Если есть варианты, обновляем их
+        if (variants && variants.length > 0) {
+            // Сначала удаляем все существующие варианты
+            await prisma.subServiceVariant.deleteMany({
+                where: { subServiceId: Number(id) }
+            });
+
+            // Создаем новые варианты
+            for (const variant of variants) {
+                await prisma.subServiceVariant.create({
+                    data: {
+                        name: variant.name,
+                        price: variant.price || 0,
+                        isActive: variant.isActive !== false,
+                        subServiceId: Number(id)
+                    }
+                });
+            }
+        }
+
+        res.json({ success: true, subService: updatedSubService });
+    } catch (error) {
         console.error('Ошибка обновления комплектации:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при обновлении комплектации' });
+        res.status(500).json({ success: false, error: 'Ошибка обновления комплектации' });
     }
 });
 
