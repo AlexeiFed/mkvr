@@ -13,6 +13,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
 console.log('API_BASE_URL:', API_BASE_URL);
 console.log('NODE_ENV:', import.meta.env.MODE);
 console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
+console.log('Все переменные окружения:', import.meta.env);
 
 export const api = axios.create({
     baseURL: API_BASE_URL,
@@ -27,13 +28,18 @@ api.interceptors.request.use((config) => {
     if (token) {
         config.headers.Authorization = `Bearer ${token}`;
     }
+    console.log('Отправляем запрос к:', config.url);
     return config;
 });
 
 // Интерцептор для обработки ошибок
 api.interceptors.response.use(
-    (response) => response,
+    (response) => {
+        console.log('Получен ответ от:', response.config.url);
+        return response;
+    },
     (error) => {
+        console.error('Ошибка API:', error);
         if (error.response?.status === 401) {
             localStorage.removeItem('token');
             window.location.href = '/login';
