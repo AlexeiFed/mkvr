@@ -72,23 +72,6 @@ router.get('/service/:serviceId', async (req: Request, res: Response) => {
     }
 });
 
-// Получить все комплектующие по serviceId
-router.get('/service/:serviceId', async (req, res) => {
-    const serviceId = parseInt(req.params.serviceId, 10);
-    if (isNaN(serviceId)) {
-        res.status(400).json({ success: false, error: 'Некорректный serviceId' });
-        return;
-    }
-    try {
-        const subServices = await prisma.subService.findMany({
-            where: { serviceId, isActive: true }
-        });
-        res.json({ success: true, subServices });
-    } catch (error) {
-        res.status(500).json({ success: false, error: 'Ошибка при получении комплектующих' });
-    }
-});
-
 // Получить комплектацию по id
 router.get('/:id', async (req: Request, res: Response) => {
     try {
@@ -128,7 +111,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 // Создать комплектацию
 router.post('/', async (req: Request, res: Response) => {
     try {
-        const { name, serviceId, minAge, order, hasVariants, variants, price } = req.body;
+        const { name, serviceId, minAge, order, variants, price } = req.body;
 
         if (!name) {
             res.status(400).json({ success: false, error: 'Название обязательно' });
@@ -165,9 +148,9 @@ router.post('/', async (req: Request, res: Response) => {
                 variants: {
                     create: variants ? variants.map((variant: any) => ({
                         name: variant.name,
-                        price: Number(variant.price),
-                        media: variant.media || [],
-                        videos: variant.videos || [],
+                        price: Number(variant.price) || 0,
+                        media: Array.isArray(variant.media) ? variant.media : [],
+                        videos: Array.isArray(variant.videos) ? variant.videos : [],
                         isActive: variant.isActive !== false
                     })) : []
                 }

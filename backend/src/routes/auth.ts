@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @file: auth.ts
  * @description: Роутер для аутентификации пользователей
@@ -49,50 +48,56 @@ router.post('/register', async (req: Request, res: Response) => {
         console.log('age:', age, typeof age);
         const ageNum = Number(age);
         if (isNaN(ageNum) || !Number.isInteger(ageNum) || ageNum <= 0) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Возраст обязателен и должен быть положительным целым числом'
             });
+            return;
         }
 
         // Валидация для роли child
         if (role === 'CHILD') {
             if (!schoolId || !classId || !shift) {
-                return res.status(400).json({
+                res.status(400).json({
                     success: false,
                     error: 'Для роли "ребенок" обязательны поля: школа, класс, смена'
                 });
+                return;
             }
         }
 
         // Валидация полей для родителя
         if (role === 'PARENT') {
             if (!schoolId || !classId || !shift) {
-                return res.status(400).json({
+                res.status(400).json({
                     success: false,
                     error: 'Для роли "родитель" обязательны поля: школа, класс, смена'
                 });
+                return;
             }
             if (!childFirstName || !childLastName || !childAge) {
-                return res.status(400).json({
+                res.status(400).json({
                     success: false,
                     error: 'Для роли "родитель" обязательны поля: имя ребенка, фамилия ребенка, возраст ребенка'
                 });
+                return;
             }
             if (typeof childAge !== 'number' || !Number.isInteger(childAge) || childAge <= 0 || childAge > 18) {
-                return res.status(400).json({
+                res.status(400).json({
                     success: false,
                     error: 'Возраст ребенка должен быть положительным целым числом от 1 до 18'
                 });
+                return;
             }
         }
 
         // Проверка длины пароля
         if (password.length < 6) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Пароль должен содержать минимум 6 символов'
             });
+            return;
         }
 
         // Проверка существования пользователя
@@ -101,40 +106,11 @@ router.post('/register', async (req: Request, res: Response) => {
         });
 
         if (existingUser) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Пользователь с таким email уже существует'
             });
-        }
-
-        // Проверка существования школы и класса (для ролей ребенок и родитель)
-        if (role === 'CHILD' || role === 'PARENT') {
-            const school = await prisma.school.findUnique({
-                where: { id: schoolId },
-            });
-            if (!school) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Школа не найдена'
-                });
-            }
-
-            const classItem = await prisma.class.findUnique({
-                where: { id: classId },
-            });
-            if (!classItem) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Класс не найден'
-                });
-            }
-
-            if (classItem.schoolId !== schoolId) {
-                return res.status(400).json({
-                    success: false,
-                    error: 'Класс не принадлежит выбранной школе'
-                });
-            }
+            return;
         }
 
         // Хеширование пароля
@@ -142,18 +118,15 @@ router.post('/register', async (req: Request, res: Response) => {
 
         // Создание пользователя в транзакции
         const result = await prisma.$transaction(async (tx) => {
-            // Создание основного пользователя
+            // Создаем основного пользователя
             const user = await tx.user.create({
                 data: {
                     email,
+                    password: hashedPassword,
                     firstName,
                     lastName,
-                    password: hashedPassword,
                     role,
                     age: ageNum,
-                    school: schoolId ? schoolId.toString() : null,
-                    grade: classId ? classId.toString() : null,
-                    shift: shift || null,
                 },
                 select: {
                     id: true,
@@ -161,34 +134,24 @@ router.post('/register', async (req: Request, res: Response) => {
                     firstName: true,
                     lastName: true,
                     role: true,
-                    phone: true,
-                    city: true,
-                    school: true,
-                    grade: true,
-                    shift: true,
                     age: true,
                     createdAt: true,
                     updatedAt: true,
                 },
             });
 
-            // Создание ребенка при регистрации родителя
             let childUser = null;
-            if (role === 'PARENT' && childFirstName && childLastName && childAge) {
-                // Генерируем email для ребенка на основе данных родителя
-                const childEmail = `child_${user.id}_${Date.now()}@temp.local`;
 
+            // Если это родитель, создаем ребенка
+            if (role === 'PARENT') {
                 childUser = await tx.user.create({
                     data: {
-                        email: childEmail,
+                        email: `${childFirstName.toLowerCase()}.${childLastName.toLowerCase()}@child.local`,
+                        password: await bcrypt.hash('child123', SALT_ROUNDS),
                         firstName: childFirstName,
                         lastName: childLastName,
-                        password: await bcrypt.hash('temp_password_' + Date.now(), SALT_ROUNDS), // временный пароль
                         role: 'CHILD',
                         age: childAge,
-                        school: schoolId ? schoolId.toString() : null,
-                        grade: classId ? classId.toString() : null,
-                        shift: shift || null,
                     },
                     select: {
                         id: true,
@@ -196,11 +159,6 @@ router.post('/register', async (req: Request, res: Response) => {
                         firstName: true,
                         lastName: true,
                         role: true,
-                        phone: true,
-                        city: true,
-                        school: true,
-                        grade: true,
-                        shift: true,
                         age: true,
                         createdAt: true,
                         updatedAt: true,
@@ -233,7 +191,7 @@ router.post('/register', async (req: Request, res: Response) => {
             }
         }
 
-        return res.status(201).json({
+        res.status(201).json({
             success: true,
             user: result.user,
             childUser: result.childUser,
@@ -241,7 +199,7 @@ router.post('/register', async (req: Request, res: Response) => {
         });
     } catch (error) {
         console.error('Registration error:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при регистрации'
         });
@@ -255,10 +213,11 @@ router.post('/login', async (req: Request, res: Response) => {
 
         // Базовая валидация
         if (!email || !password) {
-            return res.status(400).json({
+            res.status(400).json({
                 success: false,
                 error: 'Email и пароль обязательны'
             });
+            return;
         }
 
         // Поиск пользователя
@@ -267,20 +226,22 @@ router.post('/login', async (req: Request, res: Response) => {
         });
 
         if (!user) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'Неверный email или пароль'
             });
+            return;
         }
 
         // Проверка пароля
         const isValidPassword = await bcrypt.compare(password, user.password);
 
         if (!isValidPassword) {
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'Неверный email или пароль'
             });
+            return;
         }
 
         // Генерация JWT токена
@@ -301,24 +262,19 @@ router.post('/login', async (req: Request, res: Response) => {
             firstName: user.firstName,
             lastName: user.lastName,
             role: user.role,
-            phone: user.phone,
-            city: user.city,
-            school: user.school,
-            grade: user.grade,
-            shift: user.shift,
             age: user.age,
             createdAt: user.createdAt,
             updatedAt: user.updatedAt,
         };
 
-        return res.json({
+        res.json({
             success: true,
             user: userData,
             token
         });
     } catch (error) {
         console.error('Login error:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при входе'
         });
@@ -333,10 +289,11 @@ router.get('/me', authenticateToken, async (req: Request, res: Response) => {
 
         if (!userId) {
             console.log('[auth/me] No userId found');
-            return res.status(401).json({
+            res.status(401).json({
                 success: false,
                 error: 'Требуется аутентификация'
             });
+            return;
         }
 
         console.log('[auth/me] Looking for user with id:', userId);
@@ -349,10 +306,6 @@ router.get('/me', authenticateToken, async (req: Request, res: Response) => {
                 lastName: true,
                 role: true,
                 phone: true,
-                city: true,
-                school: true,
-                grade: true,
-                shift: true,
                 age: true,
                 createdAt: true,
                 updatedAt: true,
@@ -363,19 +316,20 @@ router.get('/me', authenticateToken, async (req: Request, res: Response) => {
 
         if (!user) {
             console.log('[auth/me] User not found');
-            return res.status(404).json({
+            res.status(404).json({
                 success: false,
                 error: 'Пользователь не найден'
             });
+            return;
         }
 
-        return res.json({
+        res.json({
             success: true,
             user
         });
     } catch (error) {
         console.error('[auth/me] Error:', error);
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при получении данных пользователя'
         });
@@ -387,12 +341,12 @@ router.post('/logout', authenticateToken, async (_req: Request, res: Response) =
     try {
         // В JWT аутентификации выход происходит на клиенте
         // Здесь можно добавить логику для blacklist токенов если нужно
-        return res.json({
+        res.json({
             success: true,
             message: 'Выход выполнен успешно'
         });
     } catch (error) {
-        return res.status(500).json({
+        res.status(500).json({
             success: false,
             error: 'Ошибка при выходе'
         });

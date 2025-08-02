@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @file: schools.ts
  * @description: Роутер для CRUD операций со школами (School) с классами и сменами
@@ -10,7 +9,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 
 const router = Router();
-const prisma = new PrismaClient() as any;
+const prisma = new PrismaClient();
 
 // Получить все школы с классами
 router.get('/', async (_req: Request, res: Response) => {
@@ -20,9 +19,9 @@ router.get('/', async (_req: Request, res: Response) => {
                 classes: true,
             },
         });
-        return res.json({ success: true, schools });
+        res.json({ success: true, schools });
     } catch (error) {
-        return res.status(500).json({ success: false, error: 'Ошибка при получении школ' });
+        res.status(500).json({ success: false, error: 'Ошибка при получении школ' });
     }
 });
 
@@ -42,10 +41,10 @@ router.get('/list', async (_req: Request, res: Response) => {
                 name: 'asc'
             }
         });
-        return res.json({ success: true, schools });
+        res.json({ success: true, schools });
     } catch (error) {
         console.error('Ошибка получения списка школ:', error);
-        return res.status(500).json({ success: false, error: 'Ошибка при получении списка школ' });
+        res.status(500).json({ success: false, error: 'Ошибка при получении списка школ' });
     }
 });
 
@@ -63,17 +62,17 @@ router.get('/cities', async (_req: Request, res: Response) => {
 
         // Извлекаем города из адресов (до первой запятой)
         const cities = schools
-            .map((school: { address: string }) => {
-                const city = school.address.split(',')[0]?.trim() || '';
+            .map((school) => {
+                const city = school.address?.split(',')[0]?.trim() || '';
                 return city;
             })
-            .filter((city: string, index: number, arr: string[]) => arr.indexOf(city) === index) // Убираем дубликаты
+            .filter((city, index, arr) => arr.indexOf(city) === index) // Убираем дубликаты
             .sort(); // Сортируем по алфавиту
 
-        return res.json({ success: true, cities });
+        res.json({ success: true, cities });
     } catch (error) {
         console.error('Ошибка получения городов:', error);
-        return res.status(500).json({ success: false, error: 'Ошибка при получении городов' });
+        res.status(500).json({ success: false, error: 'Ошибка при получении городов' });
     }
 });
 
@@ -102,10 +101,10 @@ router.get('/classes', async (_req: Request, res: Response) => {
                 }
             ]
         });
-        return res.json({ success: true, classes });
+        res.json({ success: true, classes });
     } catch (error) {
         console.error('Ошибка получения списка классов:', error);
-        return res.status(500).json({ success: false, error: 'Ошибка при получении списка классов' });
+        res.status(500).json({ success: false, error: 'Ошибка при получении списка классов' });
     }
 });
 
@@ -113,17 +112,23 @@ router.get('/classes', async (_req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params['id']);
-        if (isNaN(id)) return res.status(400).json({ success: false, error: 'Некорректный ID' });
+        if (isNaN(id)) {
+            res.status(400).json({ success: false, error: 'Некорректный ID' });
+            return;
+        }
         const school = await prisma.school.findUnique({
             where: { id },
             include: {
                 classes: true,
             },
         });
-        if (!school) return res.status(404).json({ success: false, error: 'Школа не найдена' });
-        return res.json({ success: true, school });
+        if (!school) {
+            res.status(404).json({ success: false, error: 'Школа не найдена' });
+            return;
+        }
+        res.json({ success: true, school });
     } catch (error) {
-        return res.status(500).json({ success: false, error: 'Ошибка при получении школы' });
+        res.status(500).json({ success: false, error: 'Ошибка при получении школы' });
     }
 });
 
@@ -131,8 +136,14 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.post('/', async (req: Request, res: Response) => {
     try {
         const { name, address, note, isActive } = req.body;
-        if (!name) return res.status(400).json({ success: false, error: 'Название обязательно' });
-        if (!address) return res.status(400).json({ success: false, error: 'Адрес обязателен' });
+        if (!name) {
+            res.status(400).json({ success: false, error: 'Название обязательно' });
+            return;
+        }
+        if (!address) {
+            res.status(400).json({ success: false, error: 'Адрес обязателен' });
+            return;
+        }
 
         const school = await prisma.school.create({
             data: {
@@ -142,10 +153,10 @@ router.post('/', async (req: Request, res: Response) => {
                 isActive: isActive !== false
             },
         });
-        return res.status(201).json({ success: true, school });
+        res.status(201).json({ success: true, school });
     } catch (error) {
         console.error('Ошибка создания школы:', error);
-        return res.status(500).json({ success: false, error: 'Ошибка при создании школы' });
+        res.status(500).json({ success: false, error: 'Ошибка при создании школы' });
     }
 });
 
@@ -154,7 +165,10 @@ router.put('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params['id']);
         const { name, address, note, isActive } = req.body;
-        if (isNaN(id)) return res.status(400).json({ success: false, error: 'Некорректный ID' });
+        if (isNaN(id)) {
+            res.status(400).json({ success: false, error: 'Некорректный ID' });
+            return;
+        }
 
         const updateData: any = {};
         if (name !== undefined) updateData.name = name;
@@ -166,10 +180,10 @@ router.put('/:id', async (req: Request, res: Response) => {
             where: { id },
             data: updateData,
         });
-        return res.json({ success: true, school });
+        res.json({ success: true, school });
     } catch (error) {
         console.error('Ошибка обновления школы:', error);
-        return res.status(500).json({ success: false, error: 'Ошибка при обновлении школы' });
+        res.status(500).json({ success: false, error: 'Ошибка при обновлении школы' });
     }
 });
 
@@ -177,11 +191,14 @@ router.put('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params['id']);
-        if (isNaN(id)) return res.status(400).json({ success: false, error: 'Некорректный ID' });
+        if (isNaN(id)) {
+            res.status(400).json({ success: false, error: 'Некорректный ID' });
+            return;
+        }
         await prisma.school.delete({ where: { id } });
-        return res.json({ success: true });
+        res.json({ success: true });
     } catch (error) {
-        return res.status(500).json({ success: false, error: 'Ошибка при удалении школы' });
+        res.status(500).json({ success: false, error: 'Ошибка при удалении школы' });
     }
 });
 
@@ -189,13 +206,16 @@ router.delete('/:id', async (req: Request, res: Response) => {
 router.get('/:id/classes', async (req: Request, res: Response) => {
     try {
         const schoolId = Number(req.params['id']);
-        if (isNaN(schoolId)) return res.status(400).json({ success: false, error: 'Некорректный ID школы' });
+        if (isNaN(schoolId)) {
+            res.status(400).json({ success: false, error: 'Некорректный ID школы' });
+            return;
+        }
         const classes = await prisma.class.findMany({
             where: { schoolId },
         });
-        return res.json({ success: true, classes });
+        res.json({ success: true, classes });
     } catch (error) {
-        return res.status(500).json({ success: false, error: 'Ошибка при получении классов' });
+        res.status(500).json({ success: false, error: 'Ошибка при получении классов' });
     }
 });
 
