@@ -2017,9 +2017,11 @@
   - [x] Диагностика проблем с production
   - [x] Добавление логирования для диагностики
   - [x] Создание инструкции по настройке Render
-  - [ ] Настройка переменных окружения в Render Dashboard
-  - [ ] Проверка подключения к базе данных
-  - [ ] Выполнение миграций в production
-  - [ ] Тестирование API endpoints
+  - [x] Тестирование API endpoints
+  - [x] Получение правильного DATABASE_URL
+  - [ ] Добавить DATABASE_URL в Render Dashboard
+  - [ ] Перезапустить сервис
+  - [ ] Протестировать API после настройки
 - **Зависимости**: Render Dashboard, Database configuration, Environment variables
 - **Результат**: Production API должен работать корректно
+- **Текущий статус**: Health check работает, но API endpoints требуют DATABASE_URL
