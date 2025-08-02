@@ -15,12 +15,12 @@ async function createTestUsers() {
     try {
         console.log('Проверка и создание таблиц базы данных...');
 
-        // Сначала выполняем миграции
+        // Сначала применяем схему к базе данных
         try {
-            execSync('npx prisma migrate deploy', { stdio: 'inherit' });
-            console.log('✅ Миграции выполнены успешно');
+            execSync('npx prisma db push', { stdio: 'inherit' });
+            console.log('✅ Схема базы данных применена успешно');
         } catch (error) {
-            console.log('Ошибка выполнения миграций:', error.message);
+            console.log('Ошибка применения схемы:', error.message);
             console.log('Продолжаем...');
         }
 
