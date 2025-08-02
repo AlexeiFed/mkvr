@@ -17,7 +17,7 @@ async function createTestUsers() {
 
         // Сначала применяем схему к базе данных
         try {
-            execSync('npx prisma db push', { stdio: 'inherit' });
+            execSync('npx prisma db push --accept-data-loss', { stdio: 'inherit' });
             console.log('✅ Схема базы данных применена успешно');
         } catch (error) {
             console.log('Ошибка применения схемы:', error.message);
