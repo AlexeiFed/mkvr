@@ -1938,9 +1938,9 @@
 - **Описание**: Исправлены все ошибки компиляции TypeScript в проекте
 - **Шаги выполнения**:
   - [x] Исправлены ошибки в users.ts:
-    - [x] Убраны несуществующие поля: city, school, grade, shift из select
+    - [x] Убраны несуществующие поля: city, school, grade, shift, ordersAsChild из select
     - [x] Исправлены return statements в async функциях
-    - [x] Исправлена логика получения school и grade через ordersAsChild
+    - [x] Исправлена логика получения school и grade через отдельные запросы к Order
   - [x] Исправлены ошибки в workshops.ts:
     - [x] Убраны return statements из async функции статистики
   - [x] Приведена схема User в соответствие с реальной структурой базы данных

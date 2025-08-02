@@ -31,68 +31,77 @@ router.get('/', async (req: Request, res: Response) => {
                 phone: true,
                 age: true,
                 createdAt: true,
-                updatedAt: true,
-                // Получаем актуальные данные через мастер-классы
-                ordersAsChild: {
-                    select: {
-                        workshop: {
-                            select: {
-                                school: {
-                                    select: {
-                                        id: true,
-                                        name: true,
-                                        address: true
-                                    }
-                                },
-                                class: {
-                                    select: {
-                                        id: true,
-                                        name: true
-                                    }
-                                }
-                            }
-                        }
-                    },
-                    orderBy: {
-                        createdAt: 'desc'
-                    },
-                    take: 1
-                }
+                updatedAt: true
             }
         });
 
-        // Обрабатываем данные, чтобы показать актуальную школу и класс
-        let processedUsers = users.map(user => {
-            const latestOrder = user.ordersAsChild?.[0];
-            const actualSchool = latestOrder?.workshop?.school?.name || null;
-            const actualGrade = latestOrder?.workshop?.class?.name || null;
+        // Получаем данные о школах и классах через заказы для детей
+        const processedUsers = await Promise.all(
+            users.map(async (user) => {
+                if (user.role === 'CHILD') {
+                    // Для детей получаем данные через их заказы
+                    const latestOrder = await prisma.order.findFirst({
+                        where: { childId: user.id },
+                        include: {
+                            workshop: {
+                                include: {
+                                    school: {
+                                        select: {
+                                            id: true,
+                                            name: true,
+                                            address: true
+                                        }
+                                    },
+                                    class: {
+                                        select: {
+                                            id: true,
+                                            name: true
+                                        }
+                                    }
+                                }
+                            }
+                        },
+                        orderBy: { createdAt: 'desc' }
+                    });
 
-            return {
-                ...user,
-                school: actualSchool,
-                grade: actualGrade,
-                schoolId: latestOrder?.workshop?.school?.id || null,
-                classId: latestOrder?.workshop?.class?.id || null,
-                schoolAddress: latestOrder?.workshop?.school?.address || null,
-                ordersAsChild: undefined // Убираем из ответа
-            };
-        });
+                    return {
+                        ...user,
+                        school: latestOrder?.workshop?.school?.name || null,
+                        grade: latestOrder?.workshop?.class?.name || null,
+                        schoolId: latestOrder?.workshop?.school?.id || null,
+                        classId: latestOrder?.workshop?.class?.id || null,
+                        schoolAddress: latestOrder?.workshop?.school?.address || null
+                    };
+                } else {
+                    // Для других ролей возвращаем без изменений
+                    return {
+                        ...user,
+                        school: null,
+                        grade: null,
+                        schoolId: null,
+                        classId: null,
+                        schoolAddress: null
+                    };
+                }
+            })
+        );
 
         // Фильтруем по школе, если указан фильтр
+        let filteredUsers = processedUsers;
         if (school) {
             const schoolId = Number(school);
-            processedUsers = processedUsers.filter(user => user.schoolId === schoolId);
+            filteredUsers = processedUsers.filter(user => user.schoolId === schoolId);
         }
 
         // Фильтруем по классу, если указан фильтр
         if (grade) {
             const classId = Number(grade);
-            processedUsers = processedUsers.filter(user => user.classId === classId);
+            filteredUsers = filteredUsers.filter(user => user.classId === classId);
         }
 
         // Фильтруем по городу, если указан фильтр
         if (city) {
-            processedUsers = processedUsers.filter(user =>
+            filteredUsers = filteredUsers.filter(user =>
                 user.schoolAddress?.toLowerCase().includes(city.toString().toLowerCase())
             );
         }
@@ -102,7 +111,7 @@ router.get('/', async (req: Request, res: Response) => {
 
         res.json({
             success: true,
-            users: processedUsers,
+            users: filteredUsers,
             total,
             page: Number(page),
             pageSize: Number(pageSize)

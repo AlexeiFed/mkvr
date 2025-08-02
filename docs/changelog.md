@@ -4,9 +4,9 @@
 
 ### Исправлено
 - **Ошибки компиляции в users.ts**: Исправлены все ошибки TypeScript
-  - Убраны несуществующие поля: city, school, grade, shift из select
+  - Убраны несуществующие поля: city, school, grade, shift, ordersAsChild из select
   - Исправлены return statements в async функциях
-  - Исправлена логика получения school и grade через ordersAsChild
+  - Исправлена логика получения school и grade через отдельные запросы к Order
 - **Ошибки компиляции в workshops.ts**: Исправлена статистика
   - Убраны return statements из async функции статистики
 - **Схема User**: Приведена в соответствие с реальной структурой базы данных
