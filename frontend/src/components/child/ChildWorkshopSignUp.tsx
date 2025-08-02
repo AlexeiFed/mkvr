@@ -20,9 +20,7 @@ import {
     Slide,
     Zoom,
     useTheme,
-    useMediaQuery,
-    FormControlLabel,
-    Radio
+    useMediaQuery
 } from '@mui/material';
 import { CheckCircle as CheckCircleIcon, Close as CloseIcon } from '@mui/icons-material';
 import type { Workshop, WorkshopOrder } from '../../types';
@@ -78,17 +76,6 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
     const [galleryIndex, setGalleryIndex] = useState(0);
     const [videoOpen, setVideoOpen] = useState(false);
     const [videoUrl, setVideoUrl] = useState<string>('');
-
-    const handleShowPhotos = (photos: string[], startIndex: number) => {
-        setGalleryPhotos(photos);
-        setGalleryIndex(startIndex);
-        setGalleryOpen(true);
-    };
-
-    const handleShowVideo = (video: string) => {
-        setVideoUrl(video);
-        setVideoOpen(true);
-    };
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -287,13 +274,6 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
         } finally {
             setSubmitting(false);
         }
-    };
-
-    const handleVariantChange = (complectationId: number, variantId: number) => {
-        setSelectedVariants(prev => ({
-            ...prev,
-            [complectationId]: variantId
-        }));
     };
 
     // Сортировка комплектующих по order

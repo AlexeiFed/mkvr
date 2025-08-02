@@ -151,17 +151,9 @@ const SubServicesList: React.FC<SubServicesListProps> = ({
                                         </Typography>
                                     </TableCell>
                                     <TableCell>
-                                        {subService.avatar ? (
-                                            <Avatar
-                                                src={subService.avatar}
-                                                alt={subService.name}
-                                                sx={{ width: 40, height: 40 }}
-                                            />
-                                        ) : (
-                                            <Avatar sx={{ width: 40, height: 40, bgcolor: 'grey.300' }}>
-                                                {subService.name.charAt(0)}
-                                            </Avatar>
-                                        )}
+                                        <Avatar sx={{ width: 40, height: 40, bgcolor: 'grey.300' }}>
+                                            {subService.name.charAt(0)}
+                                        </Avatar>
                                     </TableCell>
                                     <TableCell>
                                         <Typography variant="h6" component="h2" gutterBottom>
