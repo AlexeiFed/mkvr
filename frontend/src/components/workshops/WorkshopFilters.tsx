@@ -19,6 +19,7 @@ import Autocomplete from '@mui/material/Autocomplete';
 import { Clear as ClearIcon } from '@mui/icons-material';
 import type { RootState } from '../../store';
 import type { AppDispatch } from '../../store';
+import api from '../../services/api';
 
 interface WorkshopFiltersProps {
     filters: {
@@ -48,11 +49,10 @@ const WorkshopFilters: React.FC<WorkshopFiltersProps> = ({ filters, onFilterChan
 
     // Загружаем список городов
     useEffect(() => {
-        fetch('http://localhost:3001/api/schools/cities')
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.cities) {
-                    setCities(data.cities);
+        api.get('/schools/cities')
+            .then(res => {
+                if (res.data.success && res.data.cities) {
+                    setCities(res.data.cities);
                 }
             })
             .catch(err => console.error('Ошибка загрузки городов:', err));

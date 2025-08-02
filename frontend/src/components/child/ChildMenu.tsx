@@ -22,7 +22,7 @@ import {
     Person as PersonIcon,
     Chat as ChatIcon
 } from '@mui/icons-material';
-import ChildProfile from './ChildProfile';
+// import ChildProfile from './ChildProfile';
 import type { User } from '../../store/authSlice';
 import type { RootState } from '../../store';
 import type { AppDispatch } from '../../store';
@@ -38,11 +38,8 @@ interface ChildMenuProps {
 
 const ChildMenu: React.FC<ChildMenuProps> = ({
     currentUser,
-    onLogout,
-    onUpdateProfile,
     onChatClick
 }) => {
-    const [profileOpen, setProfileOpen] = useState(false);
     const [forceUpdate, setForceUpdate] = useState(0);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
@@ -116,24 +113,7 @@ const ChildMenu: React.FC<ChildMenuProps> = ({
         };
     }, [dispatch]);
 
-    const handleProfileOpen = () => {
-        setProfileOpen(true);
-    };
 
-    const handleProfileClose = () => {
-        setProfileOpen(false);
-    };
-
-    const handleLogout = () => {
-        setProfileOpen(false);
-        onLogout();
-    };
-
-    const handleUpdateProfile = (updatedUser: Partial<User>) => {
-        onUpdateProfile(updatedUser);
-        // Можно добавить уведомление об успешном обновлении
-        console.log('Профиль обновлен:', updatedUser);
-    };
 
     const handleChatClick = () => {
         if (onChatClick) {
@@ -206,7 +186,7 @@ const ChildMenu: React.FC<ChildMenuProps> = ({
 
                         {/* Кнопка профиля */}
                         <IconButton
-                            onClick={handleProfileOpen}
+                            onClick={() => { }}
                             sx={{
                                 color: '#fff',
                                 background: 'rgba(255, 255, 255, 0.1)',
@@ -229,13 +209,13 @@ const ChildMenu: React.FC<ChildMenuProps> = ({
             </AppBar>
 
             {/* Диалог профиля */}
-            <ChildProfile
+            {/* <ChildProfile
                 open={profileOpen}
                 currentUser={currentUser}
                 onClose={handleProfileClose}
                 onLogout={handleLogout}
                 onUpdateProfile={handleUpdateProfile}
-            />
+            /> */}
         </>
     );
 };

@@ -29,6 +29,7 @@ import { Visibility, VisibilityOff } from '@mui/icons-material';
 import { IconButton, InputAdornment } from '@mui/material';
 import { registerUser, clearError } from '../../store/authSlice';
 import type { RootState, AppDispatch } from '../../store';
+import api from '../../services/api';
 
 interface School {
     id: number;
@@ -91,11 +92,8 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
 
     const fetchSchools = async () => {
         try {
-            const response = await fetch('http://localhost:3001/api/schools');
-            if (response.ok) {
-                const data = await response.json();
-                setSchools(data.schools || []);
-            }
+            const response = await api.get('/schools');
+            setSchools(response.data.schools || []);
         } catch (error) {
             console.error('Ошибка загрузки школ:', error);
         }

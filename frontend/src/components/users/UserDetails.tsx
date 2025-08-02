@@ -25,6 +25,7 @@ import { Close, Delete } from '@mui/icons-material';
 import type { AppDispatch } from '../../store';
 import { deleteUser } from '../../store/usersSlice';
 import type { User } from '../../types';
+import api from '../../services/api';
 
 interface UserDetailsProps {
     userId: number;
@@ -45,16 +46,15 @@ const UserDetails: React.FC<UserDetailsProps> = ({ userId, onClose }) => {
             try {
                 setIsLoading(true);
                 setError(null);
-                const response = await fetch(`http://localhost:3001/api/users/${userId}`);
-                if (!response.ok) {
+                const response = await api.get(`/users/${userId}`);
+                if (response.status !== 200) {
                     throw new Error('Ошибка загрузки данных пользователя');
                 }
-                const data = await response.json();
-                setUser(data.user);
+                setUser(response.data.user);
 
                 // Загружаем названия школы и класса
-                if (data.user.school && data.user.grade) {
-                    await loadSchoolAndClassNames(data.user.school, data.user.grade);
+                if (response.data.user.school && response.data.user.grade) {
+                    await loadSchoolAndClassNames(response.data.user.school, response.data.user.grade);
                 }
             } catch (err) {
                 setError(err instanceof Error ? err.message : 'Неизвестная ошибка');
@@ -63,20 +63,19 @@ const UserDetails: React.FC<UserDetailsProps> = ({ userId, onClose }) => {
             }
         };
 
-        const loadSchoolAndClassNames = async (schoolId: string, classId: string) => {
+        const loadSchoolAndClassNames = async (schoolId: number, classId: number) => {
             try {
                 // Загружаем школу
-                const schoolResponse = await fetch(`http://localhost:3001/api/schools/${schoolId}`);
-                if (schoolResponse.ok) {
-                    const schoolData = await schoolResponse.json();
-                    setSchoolName(schoolData.school.name);
+                const schoolResponse = await api.get(`/schools/${schoolId}`);
+                if (schoolResponse.status === 200) {
+                    setSchoolName(schoolResponse.data.school.name);
                 }
 
                 // Загружаем класс
-                const classResponse = await fetch(`http://localhost:3001/api/schools/${schoolId}/classes`);
-                if (classResponse.ok) {
-                    const classData = await classResponse.json();
-                    const classItem = classData.classes.find((cls: { id: number; name: string }) => cls.id === parseInt(classId));
+                const classResponse = await api.get(`/schools/${schoolId}/classes`);
+                if (classResponse.status === 200) {
+                    const classes = classResponse.data.classes || [];
+                    const classItem = classes.find((cls: { id: number; name: string }) => cls.id === classId);
                     if (classItem) {
                         setClassName(classItem.name);
                     }
