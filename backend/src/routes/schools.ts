@@ -17,9 +17,9 @@ router.get('/', async (req: Request, res: Response) => {
         console.log('🔍 Запрос на получение школ');
         console.log('📋 Окружение:', process.env.NODE_ENV);
         console.log('📋 DATABASE_URL:', process.env.DATABASE_URL ? 'Настроен' : 'НЕ НАСТРОЕН');
-        
+
         const schools = await prisma.school.findMany();
-        
+
         console.log(`✅ Найдено школ: ${schools.length}`);
         res.json({ success: true, schools });
     } catch (error) {
@@ -138,6 +138,28 @@ router.get('/:schoolId/classes', async (req: Request, res: Response) => {
         res.json({ success: true, classes });
     } catch (error) {
         console.error('Ошибка получения классов:', error);
+        res.status(500).json({ success: false, error: 'Ошибка получения классов' });
+    }
+});
+
+// GET /api/schools/classes - Получить все классы всех школ
+router.get('/classes/all', async (req: Request, res: Response) => {
+    try {
+        const classes = await prisma.class.findMany({
+            select: {
+                id: true,
+                name: true,
+                schoolId: true,
+                phone: true,
+                teacher: true
+            },
+            orderBy: {
+                name: 'asc'
+            }
+        });
+        res.json({ success: true, classes });
+    } catch (error) {
+        console.error('Ошибка получения всех классов:', error);
         res.status(500).json({ success: false, error: 'Ошибка получения классов' });
     }
 });

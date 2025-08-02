@@ -124,14 +124,29 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
     // Обновление классов при выборе школы
     useEffect(() => {
         if (watchedSchoolId && selectedSchool) {
-            setClasses(selectedSchool.classes || []);
-            // Получаем уникальные смены из классов школы и фильтруем только 1 и 2
-            const uniqueShifts = [...new Set(
-                selectedSchool.classes
-                    .map(cls => cls.shift)
-                    .filter(shift => shift !== null && (shift === '1' || shift === '2')) as string[]
-            )];
-            setShifts(uniqueShifts);
+            // Загружаем классы для выбранной школы
+            const fetchClasses = async () => {
+                try {
+                    const response = await api.get(`/schools/${selectedSchool.id}/classes`);
+                    if (response.data.success) {
+                        setClasses(response.data.classes || []);
+
+                        // Получаем уникальные смены из классов школы и фильтруем только 1 и 2
+                        const uniqueShifts = [...new Set(
+                            response.data.classes
+                                .map((cls: any) => cls.shift)
+                                .filter((shift: string) => shift !== null && (shift === '1' || shift === '2')) as string[]
+                        )];
+                        setShifts(uniqueShifts);
+                    }
+                } catch (error) {
+                    console.error('Ошибка загрузки классов:', error);
+                    setClasses([]);
+                    setShifts([]);
+                }
+            };
+
+            fetchClasses();
         } else {
             setClasses([]);
             setShifts([]);
