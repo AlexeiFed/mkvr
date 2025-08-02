@@ -542,7 +542,7 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
                                         ←
                                     </Button>
                                     <img
-                                        src={galleryPhotos[galleryIndex] && galleryPhotos[galleryIndex].startsWith('http') ? galleryPhotos[galleryIndex] : `http://localhost:3001${galleryPhotos[galleryIndex] || ''}`}
+                                        src={galleryPhotos[galleryIndex] && galleryPhotos[galleryIndex].startsWith('http') ? galleryPhotos[galleryIndex] : `${import.meta.env.VITE_API_URL.replace('/api', '')}${galleryPhotos[galleryIndex] || ''}`}
                                         alt={`Фото ${galleryIndex + 1}`}
                                         style={{
                                             maxWidth: '80vw',
@@ -611,7 +611,7 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
                     <Box sx={{ display: 'flex', justifyContent: 'center' }}>
                         {videoUrl ? (
                             <video
-                                src={videoUrl && videoUrl.startsWith('http') ? videoUrl : `http://localhost:3001${videoUrl || ''}`}
+                                src={videoUrl && videoUrl.startsWith('http') ? videoUrl : `${import.meta.env.VITE_API_URL.replace('/api', '')}${videoUrl || ''}`}
                                 controls
                                 style={{
                                     maxWidth: '80vw',

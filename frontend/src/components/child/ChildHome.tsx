@@ -30,7 +30,7 @@ import { io as socketIOClient, Socket } from 'socket.io-client';
 import { SOCKET_URL } from '../../services/api';
 
 // Убираем хардкод localhost
-// const SOCKET_URL = 'http://localhost:3001';
+
 
 const ChildHome: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();

@@ -50,7 +50,7 @@ const getMediaUrl = (media: File | string | undefined | null): string | undefine
     if (media instanceof File) return URL.createObjectURL(media);
     if (typeof media === 'string') {
         if (media.startsWith('/uploads/')) {
-            return `http://localhost:3001${media}`;
+            return `${import.meta.env.VITE_API_URL.replace('/api', '')}${media}`;
         }
         return media;
     }
@@ -170,7 +170,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
 
             if (avatarFile && token) {
                 try {
-                    avatarUrl = await uploadFileToServer(avatarFile, 'http://localhost:3001/api/upload/avatar', token);
+                    avatarUrl = await uploadFileToServer(avatarFile, `${import.meta.env.VITE_API_URL}/upload/avatar`, token);
                 } catch (error) {
                     console.error('Ошибка загрузки аватарки:', error);
                 }
@@ -184,7 +184,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
             const oldUrls = allPhotos.filter(f => typeof f === 'string') as string[];
 
             if (newFiles.length > 0 && token) {
-                const uploadedUrls = await uploadPhotosToServer(newFiles, 'http://localhost:3001/api/upload/photo', token);
+                const uploadedUrls = await uploadPhotosToServer(newFiles, `${import.meta.env.VITE_API_URL}/upload/photo`, token);
                 photoUrls = [...oldUrls, ...uploadedUrls];
             } else {
                 photoUrls = oldUrls;
@@ -195,7 +195,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
 
             if (videoFile && token) {
                 try {
-                    videoUrl = await uploadFileToServer(videoFile, 'http://localhost:3001/api/upload/video', token);
+                    videoUrl = await uploadFileToServer(videoFile, `${import.meta.env.VITE_API_URL}/upload/video`, token);
                 } catch (error) {
                     console.error('Ошибка загрузки видео:', error);
                 }
@@ -483,7 +483,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                                                                                         const token = localStorage.getItem('token');
                                                                                         if (!token) throw new Error('Токен не найден');
 
-                                                                                        const url = await uploadFileToServer(files[0], 'http://localhost:3001/api/upload/avatar', token);
+                                                                                        const url = await uploadFileToServer(files[0], `${import.meta.env.VITE_API_URL}/upload/avatar`, token);
                                                                                         const newVariants = [...(field.value || [])];
                                                                                         newVariants[index] = { ...variant, avatar: url };
                                                                                         field.onChange(newVariants);
@@ -501,7 +501,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                                                                         {variant.avatar && (
                                                                             <Box sx={{ mt: 1 }}>
                                                                                 <img
-                                                                                    src={variant.avatar.startsWith('http') ? variant.avatar : `http://localhost:3001${variant.avatar}`}
+                                                                                    src={variant.avatar.startsWith('http') ? variant.avatar : `${import.meta.env.VITE_API_URL.replace('/api', '')}${variant.avatar}`}
                                                                                     alt="Аватарка варианта"
                                                                                     style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4 }}
                                                                                     onError={(e) => {
@@ -534,7 +534,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                                                                                         const token = localStorage.getItem('token');
                                                                                         if (!token) throw new Error('Токен не найден');
 
-                                                                                        const urls = await uploadPhotosToServer(files, 'http://localhost:3001/api/upload/photos', token);
+                                                                                        const urls = await uploadPhotosToServer(files, `${import.meta.env.VITE_API_URL}/upload/photos`, token);
                                                                                         const newVariants = [...(field.value || [])];
                                                                                         const existingPhotos = variant.photos || [];
                                                                                         newVariants[index] = { ...variant, photos: [...existingPhotos, ...urls] };
@@ -556,7 +556,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                                                                                 {variant.photos.map((photo, photoIndex) => (
                                                                                     <Box key={photoIndex} sx={{ position: 'relative' }}>
                                                                                         <img
-                                                                                            src={photo.startsWith('http') ? photo : `http://localhost:3001${photo}`}
+                                                                                            src={photo.startsWith('http') ? photo : `${import.meta.env.VITE_API_URL.replace('/api', '')}${photo}`}
                                                                                             alt={`Фото ${photoIndex + 1}`}
                                                                                             style={{ width: 60, height: 60, objectFit: 'cover', borderRadius: 4 }}
                                                                                             onError={(e) => {
@@ -608,7 +608,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                                                                                         // Загружаем каждое видео отдельно
                                                                                         const urls = [];
                                                                                         for (const file of files) {
-                                                                                            const url = await uploadFileToServer(file, 'http://localhost:3001/api/upload/video', token);
+                                                                                            const url = await uploadFileToServer(file, `${import.meta.env.VITE_API_URL}/upload/video`, token);
                                                                                             urls.push(url);
                                                                                         }
 
@@ -633,7 +633,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                                                                                 {variant.videos.map((video, videoIndex) => (
                                                                                     <Box key={videoIndex} sx={{ position: 'relative' }}>
                                                                                         <video
-                                                                                            src={video.startsWith('http') ? video : `http://localhost:3001${video}`}
+                                                                                            src={video.startsWith('http') ? video : `${import.meta.env.VITE_API_URL.replace('/api', '')}${video}`}
                                                                                             controls
                                                                                             style={{ width: 120, height: 80, objectFit: 'cover', borderRadius: 4 }}
                                                                                             onError={(e) => {
@@ -725,7 +725,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                                                         const token = localStorage.getItem('token');
                                                         if (!token) throw new Error('Токен не найден');
 
-                                                        const url = await uploadFileToServer(files[0], 'http://localhost:3001/api/upload/avatar', token);
+                                                        const url = await uploadFileToServer(files[0], `${import.meta.env.VITE_API_URL}/upload/avatar`, token);
                                                         setAvatarFile(files[0]);
                                                         // Обновляем значение в форме
                                                         setValue('avatar', url);
@@ -797,7 +797,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                                                         const token = localStorage.getItem('token');
                                                         if (!token) throw new Error('Токен не найден');
 
-                                                        const urls = await uploadPhotosToServer(files, 'http://localhost:3001/api/upload/photos', token);
+                                                        const urls = await uploadPhotosToServer(files, `${import.meta.env.VITE_API_URL}/upload/photos`, token);
                                                         const existingUrls = allPhotos.filter(f => typeof f === 'string') as string[];
                                                         setAllPhotos([...existingUrls, ...urls]);
                                                         // Обновляем значение в форме
@@ -864,7 +864,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                                                         const token = localStorage.getItem('token');
                                                         if (!token) throw new Error('Токен не найден');
 
-                                                        const url = await uploadFileToServer(files[0], 'http://localhost:3001/api/upload/video', token);
+                                                        const url = await uploadFileToServer(files[0], `${import.meta.env.VITE_API_URL}/upload/video`, token);
                                                         setVideoFile(files[0]);
                                                         // Обновляем значение в форме
                                                         setValue('video', url);

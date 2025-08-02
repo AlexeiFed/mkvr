@@ -122,7 +122,7 @@ const SortableComplectationCard: React.FC<SortableComplectationCardProps> = ({
                                                 {variant.avatar && (
                                                     <Box
                                                         component="img"
-                                                        src={variant.avatar.startsWith('http') ? variant.avatar : `http://localhost:3001${variant.avatar}`}
+                                                        src={variant.avatar.startsWith('http') ? variant.avatar : `${import.meta.env.VITE_API_URL.replace('/api', '')}${variant.avatar}`}
                                                         alt="Аватар варианта"
                                                         sx={{
                                                             width: 40,
