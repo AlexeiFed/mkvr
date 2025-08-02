@@ -209,6 +209,10 @@ router.post('/register', async (req: Request, res: Response) => {
 // POST /api/auth/login - Вход пользователя
 router.post('/login', async (req: Request, res: Response) => {
     try {
+        console.log('🔐 Запрос на вход пользователя');
+        console.log('📋 Окружение:', process.env.NODE_ENV);
+        console.log('📋 DATABASE_URL:', process.env.DATABASE_URL ? 'Настроен' : 'НЕ НАСТРОЕН');
+        
         const { email, password } = req.body;
 
         // Базовая валидация
@@ -267,13 +271,20 @@ router.post('/login', async (req: Request, res: Response) => {
             updatedAt: user.updatedAt,
         };
 
+        console.log('✅ Пользователь успешно вошел:', user.email);
         res.json({
             success: true,
             user: userData,
             token
         });
     } catch (error) {
-        console.error('Login error:', error);
+        console.error('❌ Ошибка входа:', error);
+        console.error('📋 Детали ошибки:', {
+            message: (error as Error).message,
+            name: (error as Error).name,
+            stack: (error as Error).stack
+        });
+        console.error('📋 DATABASE_URL:', process.env.DATABASE_URL);
         res.status(500).json({
             success: false,
             error: 'Ошибка при входе'

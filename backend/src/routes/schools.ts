@@ -15,9 +15,11 @@ const prisma = new PrismaClient();
 router.get('/', async (req: Request, res: Response) => {
     try {
         console.log('🔍 Запрос на получение школ');
-
+        console.log('📋 Окружение:', process.env.NODE_ENV);
+        console.log('📋 DATABASE_URL:', process.env.DATABASE_URL ? 'Настроен' : 'НЕ НАСТРОЕН');
+        
         const schools = await prisma.school.findMany();
-
+        
         console.log(`✅ Найдено школ: ${schools.length}`);
         res.json({ success: true, schools });
     } catch (error) {
@@ -27,6 +29,7 @@ router.get('/', async (req: Request, res: Response) => {
             name: (error as Error).name,
             stack: (error as Error).stack
         });
+        console.error('📋 DATABASE_URL:', process.env.DATABASE_URL);
         res.status(500).json({
             success: false,
             error: 'Ошибка получения школ',
