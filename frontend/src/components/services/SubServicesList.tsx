@@ -164,22 +164,14 @@ const SubServicesList: React.FC<SubServicesListProps> = ({
                                         )}
                                     </TableCell>
                                     <TableCell>
-                                        <Typography variant="subtitle1" fontWeight="medium">
+                                        <Typography variant="h6" component="h2" gutterBottom>
                                             {subService.name}
                                         </Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography
-                                            variant="body2"
-                                            color="text.secondary"
-                                            sx={{ whiteSpace: 'pre-line' }}
-                                        >
-                                            {subService.description || '—'}
+                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                                            Комплектация для мастер-класса
                                         </Typography>
-                                    </TableCell>
-                                    <TableCell>
-                                        <Typography variant="body1" fontWeight="medium">
-                                            {subService.price.toLocaleString('ru-RU')} ₽
+                                        <Typography variant="subtitle1" fontWeight="bold" color="primary">
+                                            {subService.price} ₽
                                         </Typography>
                                     </TableCell>
                                     <TableCell>

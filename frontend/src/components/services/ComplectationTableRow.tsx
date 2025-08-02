@@ -65,7 +65,7 @@ const ComplectationTableRow: React.FC<ComplectationTableRowProps> = ({
                 </TableCell>
                 <TableCell>{complectation.name}</TableCell>
                 <TableCell>
-                    {complectation.hasVariants ? (
+                    {complectation.variants && complectation.variants.length > 0 ? (
                         <Chip
                             label={`${complectation.variants.length} вариантов`}
                             color="primary"
@@ -102,7 +102,7 @@ const ComplectationTableRow: React.FC<ComplectationTableRowProps> = ({
                                         Описание:
                                     </Typography>
                                     <Typography variant="body2" sx={{ mb: 2 }}>
-                                        {complectation.description || 'Описание отсутствует'}
+                                        Комплектация для мастер-класса
                                     </Typography>
 
                                     <Typography variant="subtitle2" color="text.secondary">
@@ -117,7 +117,7 @@ const ComplectationTableRow: React.FC<ComplectationTableRowProps> = ({
                                     <Typography variant="subtitle2" color="text.secondary" gutterBottom>
                                         Варианты:
                                     </Typography>
-                                    {complectation.hasVariants && complectation.variants.length > 0 ? (
+                                    {complectation.variants && complectation.variants.length > 0 ? (
                                         <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
                                             {complectation.variants.map((variant) => (
                                                 <Card key={variant.id} variant="outlined" sx={{ p: 1 }}>
@@ -125,11 +125,9 @@ const ComplectationTableRow: React.FC<ComplectationTableRowProps> = ({
                                                         <Typography variant="subtitle2" fontWeight="bold">
                                                             {variant.name}
                                                         </Typography>
-                                                        {variant.description && (
-                                                            <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
-                                                                {variant.description}
-                                                            </Typography>
-                                                        )}
+                                                        <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                                            Вариант комплектации
+                                                        </Typography>
                                                         <Typography variant="body2" fontWeight="bold" color="primary">
                                                             {variant.price} ₽
                                                         </Typography>

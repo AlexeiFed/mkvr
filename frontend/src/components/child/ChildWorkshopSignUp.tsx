@@ -20,7 +20,9 @@ import {
     Slide,
     Zoom,
     useTheme,
-    useMediaQuery
+    useMediaQuery,
+    FormControlLabel,
+    Radio
 } from '@mui/material';
 import { CheckCircle as CheckCircleIcon, Close as CloseIcon } from '@mui/icons-material';
 import type { Workshop, WorkshopOrder } from '../../types';
@@ -163,7 +165,7 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
             console.log('[DEBUG] complectation found:', complectation?.name, 'variantId:', comp.variantId);
 
             if (complectation) {
-                if (complectation.hasVariants && complectation.variants && complectation.variants.length > 0) {
+                if (complectation.variants && complectation.variants.length > 0) {
                     const selectedVariant = complectation.variants.find(v => v.id === comp.variantId);
                     console.log('[DEBUG] selectedVariant:', selectedVariant?.name, 'price:', selectedVariant?.price);
                     if (selectedVariant) {
@@ -287,6 +289,13 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
         }
     };
 
+    const handleVariantChange = (complectationId: number, variantId: number) => {
+        setSelectedVariants(prev => ({
+            ...prev,
+            [complectationId]: variantId
+        }));
+    };
+
     // Сортировка комплектующих по order
     const sortedComplectations = [...complectations].sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -344,10 +353,10 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
                                 Нет доступных комплектующих для твоего возраста
                             </Typography>
                         )}
-                        {sortedComplectations.map(comp => (
+                        {sortedComplectations.map(complectation => (
                             <ComplectationCard
-                                key={comp.id}
-                                complectation={comp}
+                                key={complectation.id}
+                                complectation={complectation}
                                 selectedComplectations={formData.selectedComplectations}
                                 setSelectedComplectations={(newSelected) => {
                                     setFormData(prev => ({
@@ -359,8 +368,6 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
                                 }}
                                 selectedVariants={selectedVariants}
                                 setSelectedVariants={setSelectedVariants}
-                                onShowPhotos={handleShowPhotos}
-                                onShowVideo={handleShowVideo}
                             />
                         ))}
                     </Box>
@@ -389,7 +396,7 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
 
                                     let displayText = complectation.name;
 
-                                    if (complectation.hasVariants && complectation.variants && comp.variantId) {
+                                    if (complectation.variants && complectation.variants.length > 0 && comp.variantId) {
                                         const selectedVariant = complectation.variants.find(v => v.id === comp.variantId);
                                         if (selectedVariant) {
                                             displayText = `${complectation.name} - ${selectedVariant.name}`;

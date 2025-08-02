@@ -25,7 +25,6 @@ import { deleteSubService } from '../../store/subServicesSlice';
 import { removeSubServiceFromService } from '../../store/actions';
 import { Dialog, DialogTitle, DialogContent, DialogActions } from '@mui/material';
 import type { AppDispatch } from '../../store';
-import { Photo as PhotoIcon, PlayCircle as PlayCircleIcon } from '@mui/icons-material';
 import {
     DndContext,
     closestCenter,
@@ -45,7 +44,6 @@ import {
     useSortable,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { Person as PersonIcon } from '@mui/icons-material';
 import { updateSubServiceOrder } from '../../store/subServicesSlice';
 
 // Компонент для перетаскиваемой карточки комплектации
@@ -103,85 +101,48 @@ const SortableComplectationCard: React.FC<SortableComplectationCardProps> = ({
                             {subService.name}
                         </Typography>
 
-                        {subService.description && (
-                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                                {subService.description}
+                        {/* Информация о комплектации */}
+                        <Box sx={{ mb: 2 }}>
+                            <Typography variant="body2" color="text.secondary">
+                                Комплектация для мастер-класса
                             </Typography>
-                        )}
+                            <Typography variant="subtitle2" fontWeight="bold" color="primary">
+                                {subService.price} ₽
+                            </Typography>
+                        </Box>
 
-                        {/* Варианты комплектации */}
-                        {subService.hasVariants && subService.variants && subService.variants.length > 0 ? (
+                        {/* Варианты или стандартная комплектация */}
+                        {subService.variants && subService.variants.length > 0 ? (
                             <Box>
-                                <Typography variant="subtitle2" gutterBottom>
-                                    Варианты:
+                                <Typography variant="body2" color="text.secondary" sx={{ mb: 1 }}>
+                                    Варианты комплектации:
                                 </Typography>
-                                <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1 }}>
-                                    {subService.variants.map((variant, index) => (
-                                        <Box key={variant.id || index} sx={{ p: 1, border: '1px solid #eee', borderRadius: 1 }}>
-                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 2 }}>
-                                                {variant.avatar && (
-                                                    <Box
-                                                        component="img"
-                                                        src={variant.avatar.startsWith('http') ? variant.avatar : `${import.meta.env.VITE_API_URL.replace('/api', '')}${variant.avatar}`}
-                                                        alt="Аватар варианта"
-                                                        sx={{
-                                                            width: 40,
-                                                            height: 40,
-                                                            objectFit: 'cover',
-                                                            borderRadius: 1,
-                                                            border: '1px solid #ddd',
-                                                        }}
-                                                    />
-                                                )}
-
-                                                <Box sx={{ flex: 1, minWidth: 0 }}>
-                                                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                                                        <Typography variant="subtitle2" fontWeight="medium">
-                                                            {variant.name}
-                                                        </Typography>
-                                                        <Typography variant="subtitle2" fontWeight="bold" color="primary">
-                                                            {variant.price} ₽
-                                                        </Typography>
-                                                    </Box>
-
-                                                    {variant.description && (
-                                                        <Typography variant="caption" color="text.secondary" sx={{ mb: 1, display: 'block' }}>
-                                                            {variant.description}
-                                                        </Typography>
-                                                    )}
-
-                                                    {/* Медиа файлы варианта */}
-                                                    <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                                                        {variant.avatar && (
-                                                            <Chip
-                                                                label="Аватар"
-                                                                size="small"
-                                                                variant="outlined"
-                                                                icon={<PersonIcon />}
-                                                            />
-                                                        )}
-                                                        {variant.photos && variant.photos.length > 0 && (
-                                                            <Chip
-                                                                label={`${variant.photos.length} фото`}
-                                                                size="small"
-                                                                variant="outlined"
-                                                                icon={<PhotoIcon />}
-                                                            />
-                                                        )}
-                                                        {variant.videos && variant.videos.length > 0 && (
-                                                            <Chip
-                                                                label={`${variant.videos.length} видео`}
-                                                                size="small"
-                                                                variant="outlined"
-                                                                icon={<PlayCircleIcon />}
-                                                            />
-                                                        )}
-                                                    </Box>
-                                                </Box>
-                                            </Box>
+                                {subService.variants.map((variant, index) => (
+                                    <Box
+                                        key={variant.id || index}
+                                        sx={{
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'center',
+                                            mb: 1,
+                                            p: 1,
+                                            borderRadius: 1,
+                                            background: 'rgba(255, 255, 255, 0.1)'
+                                        }}
+                                    >
+                                        <Box>
+                                            <Typography variant="body2" fontWeight="bold">
+                                                {variant.name}
+                                            </Typography>
+                                            <Typography variant="caption" color="text.secondary">
+                                                Вариант комплектации
+                                            </Typography>
                                         </Box>
-                                    ))}
-                                </Box>
+                                        <Typography variant="subtitle2" fontWeight="bold" color="primary">
+                                            {variant.price} ₽
+                                        </Typography>
+                                    </Box>
+                                ))}
                             </Box>
                         ) : (
                             <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
@@ -196,30 +157,16 @@ const SortableComplectationCard: React.FC<SortableComplectationCardProps> = ({
 
                         {/* Медиа индикаторы */}
                         <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-                            {subService.avatar && (
-                                <Chip
-                                    label="Аватар"
-                                    size="small"
-                                    variant="outlined"
-                                    icon={<PersonIcon />}
-                                />
-                            )}
-                            {subService.photos && subService.photos.length > 0 && (
-                                <Chip
-                                    label={`${subService.photos.length} фото`}
-                                    size="small"
-                                    variant="outlined"
-                                    icon={<PhotoIcon />}
-                                />
-                            )}
-                            {subService.video && (
-                                <Chip
-                                    label="Видео"
-                                    size="small"
-                                    variant="outlined"
-                                    icon={<PlayCircleIcon />}
-                                />
-                            )}
+                            <Chip
+                                label="Медиа недоступно"
+                                size="small"
+                                sx={{
+                                    background: 'linear-gradient(45deg, #9E9E9E, #BDBDBD)',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    borderRadius: 2
+                                }}
+                            />
                         </Box>
                     </Box>
                 </Box>

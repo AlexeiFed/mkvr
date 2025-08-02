@@ -11,25 +11,22 @@ import {
     CardContent,
     Typography,
     Box,
+    Button,
     Chip,
     Tabs,
     Tab,
     IconButton,
-    Button,
-    Avatar,
     Snackbar,
     Alert,
-    Fade,
     Grow,
-    Zoom
+    Zoom,
+    Tooltip
 } from '@mui/material';
 import {
-    ExpandMore as ExpandMoreIcon,
-    ExpandLess as ExpandLessIcon,
-    PhotoCamera as PhotoCameraIcon,
     PlayCircle as PlayCircleIcon,
     CheckCircle as CheckCircleIcon,
-    Cancel as CancelIcon
+    Cancel as CancelIcon,
+    PhotoLibrary as PhotoLibraryIcon
 } from '@mui/icons-material';
 import type { SubService } from '../../store/subServicesSlice';
 
@@ -39,8 +36,6 @@ interface ComplectationCardProps {
     setSelectedComplectations: React.Dispatch<React.SetStateAction<Array<{ subServiceId: number; variantId?: number }>>>;
     selectedVariants: { [complectationId: number]: number };
     setSelectedVariants: React.Dispatch<React.SetStateAction<{ [complectationId: number]: number }>>;
-    onShowPhotos?: (photos: string[], startIndex: number) => void;
-    onShowVideo?: (video: string) => void;
 }
 
 const ComplectationCard: React.FC<ComplectationCardProps> = ({
@@ -48,14 +43,11 @@ const ComplectationCard: React.FC<ComplectationCardProps> = ({
     selectedComplectations,
     setSelectedComplectations,
     selectedVariants,
-    setSelectedVariants,
-    onShowPhotos,
-    onShowVideo
+    setSelectedVariants
 }) => {
-    const [expandedDescriptions, setExpandedDescriptions] = useState<{ [key: number]: boolean }>({});
     // Инициализируем selectedTab на основе уже выбранного варианта
     const getInitialSelectedTab = () => {
-        if (complectation.hasVariants && complectation.variants && selectedVariants[complectation.id]) {
+        if (complectation.variants && complectation.variants.length > 0 && selectedVariants[complectation.id]) {
             const selectedVariantId = selectedVariants[complectation.id];
             const variantIndex = complectation.variants.findIndex(v => v.id === selectedVariantId);
             return variantIndex >= 0 ? variantIndex : 0;
@@ -72,14 +64,14 @@ const ComplectationCard: React.FC<ComplectationCardProps> = ({
 
     // Обновляем selectedTab при изменении selectedVariants
     useEffect(() => {
-        if (complectation.hasVariants && complectation.variants && selectedVariants[complectation.id]) {
+        if (complectation.variants && complectation.variants.length > 0 && selectedVariants[complectation.id]) {
             const selectedVariantId = selectedVariants[complectation.id];
             const variantIndex = complectation.variants.findIndex(v => v.id === selectedVariantId);
             if (variantIndex >= 0) {
                 setSelectedTab(variantIndex);
             }
         }
-    }, [selectedVariants, complectation.id, complectation.hasVariants, complectation.variants]);
+    }, [selectedVariants, complectation.id, complectation.variants]);
 
     const isSelected = selectedComplectations?.some(comp => comp.subServiceId === complectation.id) || false;
 
@@ -89,7 +81,7 @@ const ComplectationCard: React.FC<ComplectationCardProps> = ({
             console.log('[DEBUG] handleSelectionChange - initial finalVariantId:', finalVariantId);
 
             // Автоматически выбираем первый вариант только если комплектация еще не была выбрана
-            if (complectation.hasVariants && complectation.variants && complectation.variants.length > 0) {
+            if (complectation.variants && complectation.variants.length > 0) {
                 if (finalVariantId === undefined) {
                     const firstVariant = complectation.variants[0];
                     if (firstVariant && firstVariant.id !== undefined) {
@@ -111,7 +103,7 @@ const ComplectationCard: React.FC<ComplectationCardProps> = ({
             }]);
 
             let variantName = 'стандартный';
-            if (complectation.hasVariants && complectation.variants && complectation.variants.length > 0) {
+            if (complectation.variants && complectation.variants.length > 0) {
                 if (finalVariantId) {
                     const selectedVariant = complectation.variants.find(v => v.id === finalVariantId);
                     variantName = selectedVariant?.name || complectation.variants[selectedTab]?.name || 'стандартный';
@@ -148,41 +140,27 @@ const ComplectationCard: React.FC<ComplectationCardProps> = ({
         if (variant) {
             setNotification({
                 open: true,
-                message: `Выбран вариант "${variant.name}" для "${complectation.name}"! ✨`,
+                message: `Выбран вариант "${variant.name}"! ✨`,
                 severity: 'success'
             });
         }
     };
 
-    const handleExpandDescription = (variantId: number) => {
-        setExpandedDescriptions(prev => ({
-            ...prev,
-            [variantId]: !prev[variantId]
-        }));
-    };
-
     const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
         setSelectedTab(newValue);
-        if (complectation.variants && complectation.variants[newValue] && complectation.variants[newValue].id) {
-            handleVariantChange(complectation.id, complectation.variants[newValue].id);
+        if (complectation.variants && complectation.variants[newValue]) {
+            handleVariantChange(complectation.id, complectation.variants[newValue].id!);
         }
-    };
-
-    const truncateText = (text: string, maxLength: number = 100) => {
-        if (text.length <= maxLength) return text;
-        return text.substring(0, maxLength) + '...';
     };
 
     const handleShowPhotos = () => {
-        if (onShowPhotos && complectation.photos && complectation.photos.length > 0) {
-            onShowPhotos(complectation.photos, 0);
-        }
+        // Убираем ссылку на несуществующее поле photos
+        console.log('Функция показа фото временно отключена');
     };
 
     const handleShowVideo = () => {
-        if (onShowVideo && complectation.video) {
-            onShowVideo(complectation.video);
-        }
+        // Убираем ссылку на несуществующее поле video
+        console.log('Функция показа видео временно отключена');
     };
 
     return (
@@ -233,7 +211,7 @@ const ComplectationCard: React.FC<ComplectationCardProps> = ({
                                             borderRadius: 2
                                         }}
                                     />
-                                    {complectation.hasVariants && complectation.variants && (
+                                    {complectation.variants && (
                                         <Chip
                                             label={`${complectation.variants.length} вариантов`}
                                             size="small"
@@ -279,39 +257,30 @@ const ComplectationCard: React.FC<ComplectationCardProps> = ({
                             </Zoom>
                         </Box>
 
-                        {/* Аватар и описание */}
-                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                            <Fade in={true} timeout={1000}>
-                                <Avatar
-                                    src={complectation.avatar}
-                                    sx={{
-                                        width: 80,
-                                        height: 80,
-                                        mr: 3,
-                                        border: '3px solid #FFD600',
-                                        boxShadow: '0 4px 16px rgba(255, 215, 0, 0.3)'
-                                    }}
-                                >
-                                    {!complectation.avatar && (
-                                        <PhotoCameraIcon sx={{ fontSize: 40, color: '#FF8F00' }} />
-                                    )}
-                                </Avatar>
-                            </Fade>
-                            <Typography
-                                variant="body1"
-                                color="text.secondary"
+                        {/* Медиа индикаторы */}
+                        <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
+                            {/* Убираем ссылки на несуществующие поля */}
+                            <Chip
+                                label="Медиа недоступно"
+                                size="small"
                                 sx={{
-                                    fontFamily: 'Nunito, Arial, sans-serif',
-                                    fontSize: '1rem',
-                                    lineHeight: 1.6
+                                    background: 'linear-gradient(45deg, #9E9E9E, #BDBDBD)',
+                                    color: 'white',
+                                    fontWeight: 'bold',
+                                    borderRadius: 2
                                 }}
-                            >
-                                {complectation.description}
+                            />
+                        </Box>
+
+                        {/* Описание комплектации */}
+                        <Box sx={{ mt: 2 }}>
+                            <Typography variant="body2" color="text.secondary">
+                                Комплектация для мастер-класса
                             </Typography>
                         </Box>
 
                         {/* Варианты или стандартная цена */}
-                        {complectation.hasVariants && complectation.variants && complectation.variants.length > 0 ? (
+                        {complectation.variants && complectation.variants.length > 0 ? (
                             <Box>
                                 <Tabs
                                     value={selectedTab}
@@ -319,93 +288,65 @@ const ComplectationCard: React.FC<ComplectationCardProps> = ({
                                     variant="scrollable"
                                     scrollButtons="auto"
                                     sx={{
-                                        mb: 3,
                                         '& .MuiTab-root': {
-                                            color: '#FF8F00',
+                                            minWidth: 'auto',
+                                            px: 2,
+                                            py: 1,
+                                            fontSize: '0.875rem',
                                             fontWeight: 'bold',
-                                            fontSize: '1rem',
-                                            fontFamily: 'Fredoka One, Arial, sans-serif',
-                                            textTransform: 'none',
-                                            borderRadius: 2,
-                                            mx: 1,
+                                            color: '#FF8F00',
                                             '&.Mui-selected': {
                                                 color: '#FF6F00',
-                                                background: 'rgba(255, 143, 0, 0.1)',
+                                                fontWeight: 'bold'
                                             }
                                         },
                                         '& .MuiTabs-indicator': {
-                                            background: 'linear-gradient(45deg, #FF6B9D, #FF8E53)',
-                                            height: 4,
-                                            borderRadius: 2
+                                            backgroundColor: '#FF6F00',
+                                            height: 3
                                         }
                                     }}
                                 >
-                                    {complectation.variants.map((variant) => (
+                                    {complectation.variants.map((variant, index) => (
                                         <Tab
-                                            key={variant.id}
-                                            label={variant.name}
-                                            sx={{ minWidth: 'auto', px: 3 }}
+                                            key={variant.id || index}
+                                            label={
+                                                <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                                                    <Typography variant="caption" fontWeight="bold">
+                                                        {variant.name}
+                                                    </Typography>
+                                                    <Typography variant="caption" color="text.secondary">
+                                                        {variant.price} ₽
+                                                    </Typography>
+                                                </Box>
+                                            }
                                         />
                                     ))}
                                 </Tabs>
 
-                                {/* Контент выбранной вкладки */}
-                                {complectation.variants[selectedTab] && (
-                                    <Box sx={{
-                                        pl: 3,
-                                        borderLeft: '4px solid',
-                                        borderImage: 'linear-gradient(45deg, #FF6B9D, #FF8E53) 1',
-                                        borderRadius: 2,
-                                        background: 'rgba(255, 255, 255, 0.3)',
-                                        p: 2
-                                    }}>
-                                        <Typography
-                                            variant="h6"
-                                            fontWeight="bold"
-                                            color="#FF6F00"
-                                            gutterBottom
-                                            sx={{ fontFamily: 'Fredoka One, Arial, sans-serif' }}
-                                        >
-                                            {complectation.variants[selectedTab].price} ₽
-                                        </Typography>
-
-                                        {complectation.variants[selectedTab].description && (
-                                            <Box>
-                                                <Typography
-                                                    variant="body2"
-                                                    color="text.secondary"
-                                                    sx={{
-                                                        fontFamily: 'Nunito, Arial, sans-serif',
-                                                        fontSize: '0.95rem'
-                                                    }}
-                                                >
-                                                    {complectation.variants[selectedTab].id && expandedDescriptions[complectation.variants[selectedTab].id]
-                                                        ? complectation.variants[selectedTab].description
-                                                        : truncateText(complectation.variants[selectedTab].description!)
-                                                    }
-                                                </Typography>
-                                                {complectation.variants[selectedTab].description!.length > 100 && complectation.variants[selectedTab].id && (
-                                                    <IconButton
-                                                        size="small"
-                                                        onClick={() => handleExpandDescription(complectation.variants[selectedTab].id!)}
-                                                        sx={{
-                                                            mt: 1,
-                                                            color: '#FF8F00',
-                                                            '&:hover': {
-                                                                background: 'rgba(255, 143, 0, 0.1)',
-                                                            }
-                                                        }}
-                                                    >
-                                                        {expandedDescriptions[complectation.variants[selectedTab].id!]
-                                                            ? <ExpandLessIcon />
-                                                            : <ExpandMoreIcon />
-                                                        }
-                                                    </IconButton>
-                                                )}
-                                            </Box>
-                                        )}
-                                    </Box>
-                                )}
+                                {/* Содержимое выбранного варианта */}
+                                <Box sx={{ mt: 2 }}>
+                                    {complectation.variants[selectedTab] && (
+                                        <Box sx={{
+                                            pl: 3,
+                                            borderLeft: '4px solid #4CAF50',
+                                            borderRadius: 2,
+                                            background: 'rgba(255, 255, 255, 0.3)',
+                                            p: 2
+                                        }}>
+                                            <Typography
+                                                variant="h6"
+                                                fontWeight="bold"
+                                                color="#4CAF50"
+                                                sx={{ fontFamily: 'Fredoka One, Arial, sans-serif' }}
+                                            >
+                                                {complectation.variants[selectedTab].name} - {complectation.variants[selectedTab].price} ₽
+                                            </Typography>
+                                            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+                                                Вариант комплектации
+                                            </Typography>
+                                        </Box>
+                                    )}
+                                </Box>
                             </Box>
                         ) : (
                             /* Стандартная комплектация без вариантов */
@@ -429,50 +370,28 @@ const ComplectationCard: React.FC<ComplectationCardProps> = ({
 
                         {/* Интерактивные иконки медиа */}
                         <Box sx={{ display: 'flex', gap: 2, mt: 3, justifyContent: 'center' }}>
-                            {complectation.photos && complectation.photos.length > 0 && (
-                                <Zoom in={true} timeout={800}>
-                                    <IconButton
-                                        onClick={handleShowPhotos}
-                                        sx={{
-                                            background: 'linear-gradient(45deg, #2196F3, #42A5F5)',
-                                            color: 'white',
-                                            width: 60,
-                                            height: 60,
-                                            borderRadius: 3,
-                                            boxShadow: '0 4px 16px rgba(33, 150, 243, 0.3)',
-                                            '&:hover': {
-                                                background: 'linear-gradient(45deg, #1976D2, #2196F3)',
-                                                transform: 'scale(1.1)',
-                                                boxShadow: '0 6px 20px rgba(33, 150, 243, 0.4)',
-                                            }
-                                        }}
-                                    >
-                                        <PhotoCameraIcon sx={{ fontSize: 28 }} />
-                                    </IconButton>
-                                </Zoom>
-                            )}
-                            {complectation.video && (
-                                <Zoom in={true} timeout={1000}>
-                                    <IconButton
-                                        onClick={handleShowVideo}
-                                        sx={{
-                                            background: 'linear-gradient(45deg, #E91E63, #F06292)',
-                                            color: 'white',
-                                            width: 60,
-                                            height: 60,
-                                            borderRadius: 3,
-                                            boxShadow: '0 4px 16px rgba(233, 30, 99, 0.3)',
-                                            '&:hover': {
-                                                background: 'linear-gradient(45deg, #C2185B, #E91E63)',
-                                                transform: 'scale(1.1)',
-                                                boxShadow: '0 6px 20px rgba(233, 30, 99, 0.4)',
-                                            }
-                                        }}
-                                    >
-                                        <PlayCircleIcon sx={{ fontSize: 28 }} />
-                                    </IconButton>
-                                </Zoom>
-                            )}
+                            <Tooltip title="Показать фото">
+                                <IconButton
+                                    onClick={handleShowPhotos}
+                                    sx={{
+                                        color: '#FF8F00',
+                                        '&:hover': { color: '#FF6F00' }
+                                    }}
+                                >
+                                    <PhotoLibraryIcon />
+                                </IconButton>
+                            </Tooltip>
+                            <Tooltip title="Показать видео">
+                                <IconButton
+                                    onClick={handleShowVideo}
+                                    sx={{
+                                        color: '#FF8F00',
+                                        '&:hover': { color: '#FF6F00' }
+                                    }}
+                                >
+                                    <PlayCircleIcon />
+                                </IconButton>
+                            </Tooltip>
                         </Box>
                     </CardContent>
                 </Card>
