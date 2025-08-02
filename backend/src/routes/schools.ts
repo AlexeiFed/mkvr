@@ -135,7 +135,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 // Создать школу
 router.post('/', async (req: Request, res: Response) => {
     try {
-        const { name, address, note, isActive } = req.body;
+        const { name, address, isActive } = req.body;
         if (!name) {
             res.status(400).json({ success: false, error: 'Название обязательно' });
             return;
@@ -149,7 +149,6 @@ router.post('/', async (req: Request, res: Response) => {
             data: {
                 name,
                 address,
-                note: note || null,
                 isActive: isActive !== false
             },
         });
@@ -164,7 +163,7 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params['id']);
-        const { name, address, note, isActive } = req.body;
+        const { name, address, isActive } = req.body;
         if (isNaN(id)) {
             res.status(400).json({ success: false, error: 'Некорректный ID' });
             return;
@@ -173,7 +172,6 @@ router.put('/:id', async (req: Request, res: Response) => {
         const updateData: any = {};
         if (name !== undefined) updateData.name = name;
         if (address !== undefined) updateData.address = address;
-        if (note !== undefined) updateData.note = note || null;
         if (isActive !== undefined) updateData.isActive = isActive;
 
         const school = await prisma.school.update({
@@ -223,24 +221,28 @@ router.get('/:id/classes', async (req: Request, res: Response) => {
 router.post('/:id/classes', async (req: Request, res: Response) => {
     try {
         const schoolId = Number(req.params['id']);
-        const { name, shift, teacher, phone, note } = req.body;
-        if (isNaN(schoolId)) return res.status(400).json({ success: false, error: 'Некорректный ID школы' });
-        if (!name) return res.status(400).json({ success: false, error: 'Название класса обязательно' });
+        const { name, teacher, phone } = req.body;
+        if (isNaN(schoolId)) {
+            res.status(400).json({ success: false, error: 'Некорректный ID школы' });
+            return;
+        }
+        if (!name) {
+            res.status(400).json({ success: false, error: 'Название класса обязательно' });
+            return;
+        }
 
         const classItem = await prisma.class.create({
             data: {
                 name,
-                shift: shift || null,
                 teacher: teacher || null,
                 phone: phone || null,
-                note: note || null,
                 schoolId
             },
         });
-        return res.status(201).json({ success: true, class: classItem });
+        res.status(201).json({ success: true, class: classItem });
     } catch (error) {
         console.error('Ошибка создания класса:', error);
-        return res.status(500).json({ success: false, error: 'Ошибка при создании класса' });
+        res.status(500).json({ success: false, error: 'Ошибка при создании класса' });
     }
 });
 
@@ -248,17 +250,19 @@ router.post('/:id/classes', async (req: Request, res: Response) => {
 router.get('/:id/shifts', async (req: Request, res: Response) => {
     try {
         const schoolId = Number(req.params['id']);
-        if (isNaN(schoolId)) return res.status(400).json({ success: false, error: 'Некорректный ID школы' });
+        if (isNaN(schoolId)) {
+            res.status(400).json({ success: false, error: 'Некорректный ID школы' });
+            return;
+        }
         const classes = await prisma.class.findMany({
             where: { schoolId },
-            include: {
-                shifts: true,
-            },
         });
-        const shifts = classes.flatMap((cls: any) => cls.shifts);
-        return res.json({ success: true, shifts });
+        // Поскольку в схеме нет смен, возвращаем пустой массив
+        const shifts: any[] = [];
+        res.json({ success: true, shifts });
     } catch (error) {
-        return res.status(500).json({ success: false, error: 'Ошибка при получении смен' });
+        console.error('Ошибка получения смен:', error);
+        res.status(500).json({ success: false, error: 'Ошибка при получении смен' });
     }
 });
 

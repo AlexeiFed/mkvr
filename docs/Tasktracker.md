@@ -1961,7 +1961,7 @@
   - [x] Исправлена ошибка 500 при создании школ:
     - [x] Убран @ts-nocheck в schools.ts
     - [x] Исправлены return statements
-    - [x] Убраны несуществующие поля
+    - [x] Убраны несуществующие поля (note в School, shift, note, shifts в Class)
   - [x] Исправлена ошибка 400 в статистике:
     - [x] Убраны return statements в workshops.ts
     - [x] Исправлена типизация
