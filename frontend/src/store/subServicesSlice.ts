@@ -13,26 +13,19 @@ import { api } from '../services/api';
 export interface SubServiceVariant {
     id?: number;
     name: string;
-    description: string;
     price: number;
-    order: number;
-    avatar?: string;
-    photos: string[];
-    videos: string[]; // Изменено с video?: string на videos: string[]
+    media: string[];
+    videos: string[];
+    isActive: boolean;
 }
 
 export interface SubService {
     id: number;
     serviceId: number;
     name: string;
-    description?: string;
-    avatar?: string;
-    photos: string[];
-    video?: string;
     minAge: number;
     order?: number;
     isActive: boolean;
-    hasVariants: boolean;
     price: number; // Цена для комплектаций без вариантов
     createdAt: string;
     updatedAt: string;
@@ -46,10 +39,6 @@ export interface SubService {
 
 export interface CreateSubServiceData {
     name: string;
-    description?: string;
-    avatar?: string;
-    photos?: string[];
-    video?: string;
     serviceId: number;
     minAge: number;
     hasVariants?: boolean;
@@ -59,21 +48,15 @@ export interface CreateSubServiceData {
 
 export interface CreateSubServiceVariantData {
     name: string;
-    description: string;
     price: number;
-    order: number;
-    avatar?: string;
-    photos: string[];
-    videos: string[]; // Изменено с video?: string на videos: string[]
+    media: string[];
+    videos: string[];
+    isActive: boolean;
 }
 
 export interface UpdateSubServiceData {
     id: number;
     name?: string;
-    description?: string;
-    avatar?: string;
-    photos?: string[];
-    video?: string;
     serviceId?: number;
     isActive?: boolean;
     minAge?: number;
