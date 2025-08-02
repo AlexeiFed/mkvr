@@ -18,12 +18,10 @@ router.get('/', async (req: Request, res: Response) => {
         const where: any = {};
         if (role) where.role = role;
 
-        const skip = (Number(page) - 1) * Number(pageSize);
         const users = await prisma.user.findMany({
             where,
-            skip,
+            skip: (Number(page) - 1) * Number(pageSize),
             take: Number(pageSize),
-            orderBy: { createdAt: 'desc' },
             select: {
                 id: true,
                 email: true,
@@ -31,10 +29,6 @@ router.get('/', async (req: Request, res: Response) => {
                 lastName: true,
                 role: true,
                 phone: true,
-                city: true,
-                school: true,
-                grade: true,
-                shift: true,
                 age: true,
                 createdAt: true,
                 updatedAt: true,
@@ -70,8 +64,8 @@ router.get('/', async (req: Request, res: Response) => {
         // Обрабатываем данные, чтобы показать актуальную школу и класс
         let processedUsers = users.map(user => {
             const latestOrder = user.ordersAsChild?.[0];
-            const actualSchool = latestOrder?.workshop?.school?.name || user.school;
-            const actualGrade = latestOrder?.workshop?.class?.name || user.grade;
+            const actualSchool = latestOrder?.workshop?.school?.name || null;
+            const actualGrade = latestOrder?.workshop?.class?.name || null;
 
             return {
                 ...user,
@@ -126,15 +120,21 @@ router.get('/', async (req: Request, res: Response) => {
 router.get('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params['id']);
-        if (isNaN(id)) return res.status(400).json({ error: 'Некорректный ID' });
+        if (isNaN(id)) {
+            res.status(400).json({ error: 'Некорректный ID' });
+            return;
+        }
         const user = await prisma.user.findUnique({
             where: { id },
         });
-        if (!user) return res.status(404).json({ error: 'Пользователь не найден' });
-        return res.json({ user });
+        if (!user) {
+            res.status(404).json({ error: 'Пользователь не найден' });
+            return;
+        }
+        res.json({ user });
     } catch (error) {
         console.error('Ошибка получения пользователя:', error);
-        return res.status(500).json({ error: 'Ошибка получения пользователя' });
+        res.status(500).json({ error: 'Ошибка получения пользователя' });
     }
 });
 
@@ -142,7 +142,10 @@ router.get('/:id', async (req: Request, res: Response) => {
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params['id']);
-        if (isNaN(id)) return res.status(400).json({ error: 'Некорректный ID' });
+        if (isNaN(id)) {
+            res.status(400).json({ error: 'Некорректный ID' });
+            return;
+        }
 
         // Получаем информацию о пользователе перед удалением
         const user = await prisma.user.findUnique({
@@ -160,10 +163,10 @@ router.delete('/:id', async (req: Request, res: Response) => {
             }
         }
 
-        return res.json({ success: true });
+        res.json({ success: true });
     } catch (error) {
         console.error('Ошибка удаления пользователя:', error);
-        return res.status(500).json({ error: 'Ошибка удаления пользователя' });
+        res.status(500).json({ error: 'Ошибка удаления пользователя' });
     }
 });
 

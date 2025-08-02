@@ -872,7 +872,7 @@ router.get('/statistics', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']),
         };
 
         console.log('Статистика успешно сформирована:', statistics);
-        return res.json({ success: true, statistics });
+        res.json({ success: true, statistics });
     } catch (error) {
         console.error('Ошибка статистики мастер-классов:', error);
         console.error('Стек ошибки:', error instanceof Error ? error.stack : 'Неизвестная ошибка');
@@ -887,7 +887,7 @@ router.get('/statistics', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']),
             console.error('Значение ошибки:', error);
         }
 
-        return res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
+        res.status(500).json({ success: false, error: error instanceof Error ? error.message : String(error) });
     }
 });
 
