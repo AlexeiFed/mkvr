@@ -174,35 +174,18 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params['id']);
-        const { name, description, avatar, photos, video, serviceId, minAge, order, hasVariants, variants, price } = req.body;
+        const { name, serviceId, minAge, order, variants, price } = req.body;
 
         if (isNaN(id)) {
             res.status(400).json({ success: false, error: 'Некорректный ID' });
             return;
         }
 
-        // Проверяем существование комплектации
-        const existingSubService = await prisma.subService.findUnique({
-            where: { id },
-            include: { variants: true }
-        });
-
-        if (!existingSubService) {
-            res.status(404).json({ success: false, error: 'Комплектация не найдена' });
-            return;
-        }
-
-        // Обновляем основную информацию
         const updateData: any = {};
         if (name !== undefined) updateData.name = name;
-        if (description !== undefined) updateData.description = description;
-        if (avatar !== undefined) updateData.avatar = avatar;
-        if (photos !== undefined) updateData.photos = photos;
-        if (video !== undefined) updateData.video = video;
         if (serviceId !== undefined) updateData.serviceId = Number(serviceId);
         if (minAge !== undefined) updateData.minAge = Number(minAge);
         if (order !== undefined) updateData.order = Number(order);
-        if (hasVariants !== undefined) updateData.hasVariants = hasVariants;
         if (price !== undefined) updateData.price = Number(price);
 
         const subService = await prisma.subService.update({
@@ -229,12 +212,9 @@ router.put('/:id', async (req: Request, res: Response) => {
                     data: variants.map((variant: any) => ({
                         subServiceId: id,
                         name: variant.name,
-                        description: variant.description,
-                        price: Number(variant.price),
-                        avatar: variant.avatar,
-                        photos: variant.photos || [],
-                        videos: variant.videos || [], // Изменено с video на videos
-                        order: variant.order || 0,
+                        price: Number(variant.price) || 0,
+                        media: Array.isArray(variant.media) ? variant.media : [],
+                        videos: Array.isArray(variant.videos) ? variant.videos : [],
                         isActive: variant.isActive !== false
                     }))
                 });
@@ -252,6 +232,7 @@ router.put('/:id', async (req: Request, res: Response) => {
             });
 
             res.json({ success: true, subService: updatedSubService });
+            return;
         }
 
         res.json({ success: true, subService });
