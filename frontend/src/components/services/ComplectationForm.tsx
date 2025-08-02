@@ -349,7 +349,7 @@ const ComplectationForm: React.FC<ComplectationFormProps> = ({
                             Варианты комплектации
                         </Typography>
 
-                        {watchedVariants?.map((variant, index) => (
+                        {watchedVariants?.map((_, index) => (
                             <Box key={index} sx={{ mb: 2, p: 2, border: '1px solid #ddd', borderRadius: 1 }}>
                                 <Typography variant="subtitle1" gutterBottom>
                                     Вариант {index + 1}
