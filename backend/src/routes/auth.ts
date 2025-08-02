@@ -216,7 +216,7 @@ router.post('/register', async (req: Request, res: Response) => {
             {
                 id: result.user.id,
                 email: result.user.email,
-                role: result.user.role.toLowerCase()
+                role: result.user.role
             },
             JWT_SECRET,
             { expiresIn: '24h' }
@@ -288,7 +288,7 @@ router.post('/login', async (req: Request, res: Response) => {
             {
                 id: user.id,
                 email: user.email,
-                role: user.role.toLowerCase()
+                role: user.role
             },
             JWT_SECRET,
             { expiresIn: '24h' }

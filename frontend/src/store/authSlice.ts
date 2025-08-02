@@ -15,7 +15,7 @@ export interface User {
     email: string;
     firstName: string;
     lastName: string;
-    role: 'admin' | 'executor' | 'parent' | 'child';
+    role: 'ADMIN' | 'EXECUTOR' | 'PARENT' | 'CHILD';
     phone?: string;
     city?: string;
     school?: string;

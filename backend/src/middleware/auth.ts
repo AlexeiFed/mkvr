@@ -69,9 +69,9 @@ export const requireRole = (roles: string[]) => {
             return;
         }
 
-        // Сравнение ролей в нижнем регистре
-        const userRole = req.user.role.toLowerCase();
-        const allowedRoles = roles.map(r => r.toLowerCase());
+        // Сравнение ролей
+        const userRole = req.user.role;
+        const allowedRoles = roles;
         console.log('[requireRole] userRole:', userRole, 'allowedRoles:', allowedRoles);
         if (!allowedRoles.includes(userRole)) {
             console.error('Ошибка авторизации: недостаточно прав доступа', req.user);
