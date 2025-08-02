@@ -183,30 +183,16 @@ router.get('/', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (re
         }
 
         const workshops = await prisma.workshop.findMany({
-            where,
-            include: {
-                service: {
-                    select: {
-                        id: true,
-                        name: true,
-                    }
-                },
-                school: {
-                    select: {
-                        id: true,
-                        name: true,
-                    }
-                },
-                class: {
-                    select: {
-                        id: true,
-                        name: true,
-                    }
-                }
+            where: {
+                isActive: true
             },
-            orderBy: {
-                date: 'asc'
-            }
+            include: {
+                service: true,
+                school: true,
+                class: true,
+                orders: true
+            },
+            orderBy: { date: 'desc' }
         });
 
         // Подсчитываем статистику для каждого мастер-класса
@@ -235,10 +221,10 @@ router.get('/', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (re
                 });
 
                 const totalParticipants = orders.length;
-                const paidParticipants = orders.filter(order => order.paymentStatus === 'PAID').length;
+                const paidParticipants = orders.filter(order => order.paymentStatus === 'paid').length;
                 const totalAmount = orders.reduce((sum, order) => sum + order.amount, 0);
                 const paidAmount = orders
-                    .filter(order => order.paymentStatus === 'PAID')
+                    .filter(order => order.paymentStatus === 'paid')
                     .reduce((sum, order) => sum + order.amount, 0);
 
                 return {
@@ -357,10 +343,10 @@ router.get('/:id', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async 
         });
 
         const totalParticipants = orders.length;
-        const paidParticipants = orders.filter(order => order.paymentStatus === 'PAID').length;
+        const paidParticipants = orders.filter(order => order.paymentStatus === 'paid').length;
         const totalAmount = orders.reduce((sum, order) => sum + order.amount, 0);
         const paidAmount = orders
-            .filter(order => order.paymentStatus === 'PAID')
+            .filter(order => order.paymentStatus === 'paid')
             .reduce((sum, order) => sum + order.amount, 0);
 
         // Отладочная информация
@@ -853,7 +839,7 @@ router.get('/statistics', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']),
         // Общая выручка
         const orders = await prisma.order.findMany({
             where: {
-                paymentStatus: 'PAID'
+                paymentStatus: 'paid'
             },
             select: {
                 amount: true
@@ -1081,10 +1067,10 @@ router.get('/executor/my-workshops', authenticateToken, requireRole(['EXECUTOR']
             const orders = workshop.orders || [];
 
             const totalParticipants = orders.length;
-            const paidParticipants = orders.filter(order => order.paymentStatus === 'PAID').length;
+            const paidParticipants = orders.filter(order => order.paymentStatus === 'paid').length;
             const totalAmount = orders.reduce((sum, order) => sum + order.amount, 0);
             const paidAmount = orders
-                .filter(order => order.paymentStatus === 'PAID')
+                .filter(order => order.paymentStatus === 'paid')
                 .reduce((sum, order) => sum + order.amount, 0);
 
             return {

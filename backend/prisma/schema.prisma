@@ -27,8 +27,8 @@ model User {
   chats_chats_adminIdTousers  Chat[]             @relation("chats_adminIdTousers")
   chats_chats_parentIdTousers Chat[]             @relation("chats_parentIdTousers")
   messages                    Message[]
-  orders                      Order[]              @relation("ChildOrders")
-  parentOrders                Order[]              @relation("ParentOrders")
+  orders                      Order[]            @relation("ChildOrders")
+  parentOrders                Order[]            @relation("ParentOrders")
   pushSubscriptions           PushSubscription[]
   workshopExecutors           WorkshopExecutor[]
   workshops                   Workshop[]

@@ -1,7 +1,7 @@
 /**
  * @file: schools.ts
- * @description: Роутер для CRUD операций со школами (School) с классами и сменами
- * @dependencies: express, @prisma/client
+ * @description: Маршруты для работы со школами и классами
+ * @dependencies: express, prisma
  * @created: 2024-07-06
  */
 
@@ -11,137 +11,51 @@ import { PrismaClient } from '@prisma/client';
 const router = Router();
 const prisma = new PrismaClient();
 
-// Получить все школы с классами
-router.get('/', async (_req: Request, res: Response) => {
+// GET /api/schools - Получить все школы
+router.get('/', async (req: Request, res: Response) => {
     try {
         const schools = await prisma.school.findMany({
             include: {
-                classes: true,
-            },
-        });
-        res.json({ success: true, schools });
-    } catch (error) {
-        res.status(500).json({ success: false, error: 'Ошибка при получении школ' });
-    }
-});
-
-// Получить список школ для фильтра
-router.get('/list', async (_req: Request, res: Response) => {
-    try {
-        const schools = await prisma.school.findMany({
-            select: {
-                id: true,
-                name: true,
-                address: true
-            },
-            where: {
-                isActive: true
-            },
-            orderBy: {
-                name: 'asc'
+                Class: true
             }
         });
         res.json({ success: true, schools });
     } catch (error) {
-        console.error('Ошибка получения списка школ:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при получении списка школ' });
+        console.error('Ошибка получения школ:', error);
+        res.status(500).json({ success: false, error: 'Ошибка получения школ' });
     }
 });
 
-// Получить все города из адресов школ
-router.get('/cities', async (_req: Request, res: Response) => {
-    try {
-        const schools = await prisma.school.findMany({
-            select: {
-                address: true
-            },
-            where: {
-                isActive: true
-            }
-        });
-
-        // Извлекаем города из адресов (до первой запятой)
-        const cities = schools
-            .map((school) => {
-                const city = school.address?.split(',')[0]?.trim() || '';
-                return city;
-            })
-            .filter((city, index, arr) => arr.indexOf(city) === index) // Убираем дубликаты
-            .sort(); // Сортируем по алфавиту
-
-        res.json({ success: true, cities });
-    } catch (error) {
-        console.error('Ошибка получения городов:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при получении городов' });
-    }
-});
-
-// Получить список классов для фильтра
-router.get('/classes', async (_req: Request, res: Response) => {
-    try {
-        const classes = await prisma.class.findMany({
-            select: {
-                id: true,
-                name: true,
-                school: {
-                    select: {
-                        id: true,
-                        name: true
-                    }
-                }
-            },
-            orderBy: [
-                {
-                    school: {
-                        name: 'asc'
-                    }
-                },
-                {
-                    name: 'asc'
-                }
-            ]
-        });
-        res.json({ success: true, classes });
-    } catch (error) {
-        console.error('Ошибка получения списка классов:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при получении списка классов' });
-    }
-});
-
-// Получить школу по id с классами
+// GET /api/schools/:id - Получить школу по ID
 router.get('/:id', async (req: Request, res: Response) => {
     try {
-        const id = Number(req.params['id']);
-        if (isNaN(id)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID' });
-            return;
-        }
+        const { id } = req.params;
         const school = await prisma.school.findUnique({
-            where: { id },
+            where: { id: parseInt(id) },
             include: {
-                classes: true,
-            },
+                Class: true
+            }
         });
+
         if (!school) {
             res.status(404).json({ success: false, error: 'Школа не найдена' });
             return;
         }
+
         res.json({ success: true, school });
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Ошибка при получении школы' });
+        console.error('Ошибка получения школы:', error);
+        res.status(500).json({ success: false, error: 'Ошибка получения школы' });
     }
 });
 
-// Создать школу
+// POST /api/schools - Создать школу
 router.post('/', async (req: Request, res: Response) => {
     try {
-        const { name, address, isActive } = req.body;
-        if (!name) {
-            res.status(400).json({ success: false, error: 'Название обязательно' });
-            return;
-        }
-        if (!address) {
-            res.status(400).json({ success: false, error: 'Адрес обязателен' });
+        const { name, address, note } = req.body;
+
+        if (!name || !address) {
+            res.status(400).json({ success: false, error: 'Название и адрес обязательны' });
             return;
         }
 
@@ -149,123 +63,149 @@ router.post('/', async (req: Request, res: Response) => {
             data: {
                 name,
                 address,
-                isActive: isActive !== false
-            },
+                note: note || null
+            }
         });
+
         res.status(201).json({ success: true, school });
     } catch (error) {
         console.error('Ошибка создания школы:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при создании школы' });
+        res.status(500).json({ success: false, error: 'Ошибка создания школы' });
     }
 });
 
-// Обновить школу
+// PUT /api/schools/:id - Обновить школу
 router.put('/:id', async (req: Request, res: Response) => {
     try {
-        const id = Number(req.params['id']);
-        const { name, address, isActive } = req.body;
-        if (isNaN(id)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID' });
-            return;
-        }
-
-        const updateData: any = {};
-        if (name !== undefined) updateData.name = name;
-        if (address !== undefined) updateData.address = address;
-        if (isActive !== undefined) updateData.isActive = isActive;
+        const { id } = req.params;
+        const { name, address, note, isActive } = req.body;
 
         const school = await prisma.school.update({
-            where: { id },
-            data: updateData,
+            where: { id: parseInt(id) },
+            data: {
+                name,
+                address,
+                note: note || null,
+                isActive: isActive !== undefined ? isActive : true
+            }
         });
+
         res.json({ success: true, school });
     } catch (error) {
         console.error('Ошибка обновления школы:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при обновлении школы' });
+        res.status(500).json({ success: false, error: 'Ошибка обновления школы' });
     }
 });
 
-// Удалить школу
+// DELETE /api/schools/:id - Удалить школу
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
-        const id = Number(req.params['id']);
-        if (isNaN(id)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID' });
-            return;
-        }
-        await prisma.school.delete({ where: { id } });
-        res.json({ success: true });
+        const { id } = req.params;
+        await prisma.school.delete({
+            where: { id: parseInt(id) }
+        });
+
+        res.json({ success: true, message: 'Школа удалена' });
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Ошибка при удалении школы' });
+        console.error('Ошибка удаления школы:', error);
+        res.status(500).json({ success: false, error: 'Ошибка удаления школы' });
     }
 });
 
-// Получить классы школы
-router.get('/:id/classes', async (req: Request, res: Response) => {
+// GET /api/schools/:schoolId/classes - Получить классы школы
+router.get('/:schoolId/classes', async (req: Request, res: Response) => {
     try {
-        const schoolId = Number(req.params['id']);
-        if (isNaN(schoolId)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID школы' });
-            return;
-        }
+        const { schoolId } = req.params;
         const classes = await prisma.class.findMany({
-            where: { schoolId },
+            where: { schoolId: parseInt(schoolId) },
+            select: {
+                id: true,
+                name: true,
+                phone: true,
+                shift: true,
+                teacher: true,
+                School: {
+                    select: {
+                        id: true,
+                        name: true
+                    }
+                }
+            },
+            orderBy: {
+                name: 'asc'
+            }
         });
         res.json({ success: true, classes });
     } catch (error) {
-        res.status(500).json({ success: false, error: 'Ошибка при получении классов' });
+        console.error('Ошибка получения классов:', error);
+        res.status(500).json({ success: false, error: 'Ошибка получения классов' });
     }
 });
 
-// Создать класс для школы
-router.post('/:id/classes', async (req: Request, res: Response) => {
+// POST /api/schools/:schoolId/classes - Создать класс
+router.post('/:schoolId/classes', async (req: Request, res: Response) => {
     try {
-        const schoolId = Number(req.params['id']);
-        const { name, teacher, phone } = req.body;
-        if (isNaN(schoolId)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID школы' });
-            return;
-        }
+        const { schoolId } = req.params;
+        const { name, phone, shift, teacher } = req.body;
+
         if (!name) {
             res.status(400).json({ success: false, error: 'Название класса обязательно' });
             return;
         }
 
-        const classItem = await prisma.class.create({
+        const classData = await prisma.class.create({
             data: {
                 name,
-                teacher: teacher || null,
                 phone: phone || null,
-                schoolId
-            },
+                shift: shift || null,
+                teacher: teacher || null,
+                schoolId: parseInt(schoolId)
+            }
         });
-        res.status(201).json({ success: true, class: classItem });
+
+        res.status(201).json({ success: true, class: classData });
     } catch (error) {
         console.error('Ошибка создания класса:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при создании класса' });
+        res.status(500).json({ success: false, error: 'Ошибка создания класса' });
     }
 });
 
-// Получить смены школы (через классы)
-router.get('/:id/shifts', async (req: Request, res: Response) => {
+// PUT /api/schools/:schoolId/classes/:classId - Обновить класс
+router.put('/:schoolId/classes/:classId', async (req: Request, res: Response) => {
     try {
-        const schoolId = Number(req.params['id']);
-        if (isNaN(schoolId)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID школы' });
-            return;
-        }
-        const classes = await prisma.class.findMany({
-            where: { schoolId },
+        const { classId } = req.params;
+        const { name, phone, shift, teacher } = req.body;
+
+        const classData = await prisma.class.update({
+            where: { id: parseInt(classId) },
+            data: {
+                name,
+                phone: phone || null,
+                shift: shift || null,
+                teacher: teacher || null
+            }
         });
-        // Поскольку в схеме нет смен, возвращаем пустой массив
-        const shifts: any[] = [];
-        res.json({ success: true, shifts });
+
+        res.json({ success: true, class: classData });
     } catch (error) {
-        console.error('Ошибка получения смен:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при получении смен' });
+        console.error('Ошибка обновления класса:', error);
+        res.status(500).json({ success: false, error: 'Ошибка обновления класса' });
     }
 });
 
+// DELETE /api/schools/:schoolId/classes/:classId - Удалить класс
+router.delete('/:schoolId/classes/:classId', async (req: Request, res: Response) => {
+    try {
+        const { classId } = req.params;
+        await prisma.class.delete({
+            where: { id: parseInt(classId) }
+        });
 
+        res.json({ success: true, message: 'Класс удален' });
+    } catch (error) {
+        console.error('Ошибка удаления класса:', error);
+        res.status(500).json({ success: false, error: 'Ошибка удаления класса' });
+    }
+});
 
 export default router; 

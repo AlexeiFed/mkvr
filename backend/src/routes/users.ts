@@ -19,17 +19,20 @@ router.get('/', async (req: Request, res: Response) => {
         if (role) where.role = role;
 
         const users = await prisma.user.findMany({
-            where,
-            skip: (Number(page) - 1) * Number(pageSize),
-            take: Number(pageSize),
+            where: {
+                role: {
+                    in: ['child', 'parent']
+                }
+            },
             select: {
                 id: true,
                 email: true,
                 firstName: true,
                 lastName: true,
                 role: true,
-                phone: true,
                 age: true,
+                avatar: true,
+                isActive: true,
                 createdAt: true,
                 updatedAt: true
             }

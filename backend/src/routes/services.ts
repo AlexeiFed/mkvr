@@ -83,7 +83,7 @@ router.get('/:id', async (req: Request, res: Response) => {
 // Создать услугу
 router.post('/', async (req: Request, res: Response) => {
     try {
-        const { name, description, isActive, price } = req.body;
+        const { name, description, isActive } = req.body;
         if (!name) {
             res.status(400).json({ success: false, error: 'Название обязательно' });
             return;
@@ -91,10 +91,9 @@ router.post('/', async (req: Request, res: Response) => {
         const service = await prisma.service.create({
             data: {
                 name,
-                description,
-                isActive: isActive !== false,
-                price: price || 0
-            },
+                description: description || null,
+                isActive: isActive !== false
+            }
         });
         res.status(201).json({ success: true, service });
     } catch (error) {
@@ -106,14 +105,14 @@ router.post('/', async (req: Request, res: Response) => {
 router.put('/:id', async (req: Request, res: Response) => {
     try {
         const id = Number(req.params['id']);
-        const { name, description, isActive, price } = req.body;
+        const { name, description, isActive } = req.body;
         if (isNaN(id)) {
             res.status(400).json({ success: false, error: 'Некорректный ID' });
             return;
         }
         const service = await prisma.service.update({
             where: { id },
-            data: { name, description, isActive, price },
+            data: { name, description, isActive },
         });
         res.json({ success: true, service });
     } catch (error) {

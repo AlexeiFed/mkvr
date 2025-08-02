@@ -1,8 +1,8 @@
 /**
  * @file: subServices.ts
- * @description: Роутер для CRUD операций с комплектацией (SubService)
- * @dependencies: express, @prisma/client
- * @created: 2024-07-07
+ * @description: Маршруты для работы с комплектациями (SubService)
+ * @dependencies: express, prisma
+ * @created: 2024-07-06
  */
 
 import { Router, Request, Response } from 'express';
@@ -12,83 +12,31 @@ import type { AuthenticatedRequest } from '../types/express';
 const router = Router();
 const prisma = new PrismaClient();
 
-// Получить все комплектации
-router.get('/', async (_req: Request, res: Response) => {
+// GET /api/subServices - Получить все комплектации
+router.get('/', async (req: Request, res: Response) => {
     try {
         const subServices = await prisma.subService.findMany({
             include: {
                 service: true,
-                variants: {
-                    orderBy: { id: 'asc' }
-                }
-            },
-            orderBy: { id: 'asc' }
-        });
-
-        // Нормализуем все subServices
-        subServices.forEach((subService: any) => {
-            if (Array.isArray(subService.photos)) {
-                subService.photos = subService.photos.map((photo: string) => photo.trim()).filter(Boolean);
+                variants: true
             }
         });
-
         res.json({ success: true, subServices });
     } catch (error) {
         console.error('Ошибка получения комплектаций:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при получении комплектаций' });
+        res.status(500).json({ success: false, error: 'Ошибка получения комплектаций' });
     }
 });
 
-// Получить комплектации по услуге
-router.get('/service/:serviceId', async (req: Request, res: Response) => {
-    try {
-        const serviceId = Number(req.params['serviceId']);
-        if (isNaN(serviceId)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID услуги' });
-            return;
-        }
-
-        const subServices = await prisma.subService.findMany({
-            where: { serviceId },
-            include: {
-                service: true,
-                variants: {
-                    orderBy: { id: 'asc' }
-                }
-            },
-            orderBy: { id: 'asc' }
-        });
-
-        // Нормализуем все subServices
-        subServices.forEach((subService: any) => {
-            if (Array.isArray(subService.photos)) {
-                subService.photos = subService.photos.map((photo: string) => photo.trim()).filter(Boolean);
-            }
-        });
-
-        res.json({ success: true, subServices });
-    } catch (error) {
-        console.error('Ошибка получения комплектаций услуги:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при получении комплектаций услуги' });
-    }
-});
-
-// Получить комплектацию по id
+// GET /api/subServices/:id - Получить комплектацию по ID
 router.get('/:id', async (req: Request, res: Response) => {
     try {
-        const id = Number(req.params['id']);
-        if (isNaN(id)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID' });
-            return;
-        }
-
+        const { id } = req.params;
         const subService = await prisma.subService.findUnique({
-            where: { id },
+            where: { id: parseInt(id) },
             include: {
                 service: true,
-                variants: {
-                    orderBy: { id: 'asc' }
-                }
+                variants: true
             }
         });
 
@@ -97,19 +45,32 @@ router.get('/:id', async (req: Request, res: Response) => {
             return;
         }
 
-        // Нормализуем photos
-        if (Array.isArray((subService as any).photos)) {
-            (subService as any).photos = (subService as any).photos.map((photo: string) => photo.trim()).filter(Boolean);
-        }
-
         res.json({ success: true, subService });
     } catch (error) {
         console.error('Ошибка получения комплектации:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при получении комплектации' });
+        res.status(500).json({ success: false, error: 'Ошибка получения комплектации' });
     }
 });
 
-// Создать комплектацию
+// GET /api/subServices/service/:serviceId - Получить комплектации услуги
+router.get('/service/:serviceId', async (req: Request, res: Response) => {
+    try {
+        const { serviceId } = req.params;
+        const subServices = await prisma.subService.findMany({
+            where: { serviceId: parseInt(serviceId) },
+            include: {
+                variants: true
+            },
+            orderBy: { order: 'asc' }
+        });
+        res.json({ success: true, subServices });
+    } catch (error) {
+        console.error('Ошибка получения комплектаций услуги:', error);
+        res.status(500).json({ success: false, error: 'Ошибка получения комплектаций услуги' });
+    }
+});
+
+// POST /api/subServices - Создать комплектацию
 router.post('/', async (req: AuthenticatedRequest, res: Response) => {
     try {
         const { name, description, avatar, photos, video, serviceId, minAge, price, variants } = req.body;
@@ -154,7 +115,7 @@ router.post('/', async (req: AuthenticatedRequest, res: Response) => {
     }
 });
 
-// Обновить комплектацию
+// PUT /api/subServices/:id - Обновить комплектацию
 router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
     try {
         const { id } = req.params;
@@ -179,7 +140,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
         });
 
         const updatedSubService = await prisma.subService.update({
-            where: { id: Number(id) },
+            where: { id: parseInt(id) },
             data: updateData,
             include: {
                 variants: true
@@ -190,7 +151,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
         if (variants && variants.length > 0) {
             // Сначала удаляем все существующие варианты
             await prisma.subServiceVariant.deleteMany({
-                where: { subServiceId: Number(id) }
+                where: { subServiceId: parseInt(id) }
             });
 
             // Создаем новые варианты
@@ -200,7 +161,7 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
                         name: variant.name,
                         price: variant.price || 0,
                         isActive: variant.isActive !== false,
-                        subServiceId: Number(id)
+                        subServiceId: parseInt(id)
                     }
                 });
             }
@@ -213,173 +174,38 @@ router.put('/:id', async (req: AuthenticatedRequest, res: Response) => {
     }
 });
 
-// Удалить комплектацию
+// DELETE /api/subServices/:id - Удалить комплектацию
 router.delete('/:id', async (req: Request, res: Response) => {
     try {
-        const id = Number(req.params['id']);
-        if (isNaN(id)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID' });
-            return;
-        }
+        const { id } = req.params;
 
-        // Проверяем, есть ли активные заказы с этой комплектацией
-        const activeOrders = await prisma.order.findMany({
+        // Проверяем, есть ли уже заказы с этой комплектацией
+        const existingOrders = await prisma.order.findMany({
             where: {
                 orderComplectations: {
                     some: {
-                        subServiceId: id
+                        subServiceId: parseInt(id)
                     }
                 },
-                paymentStatus: 'PENDING'
+                paymentStatus: 'pending'
             }
         });
-        if (activeOrders.length > 0) {
+        if (existingOrders.length > 0) {
             res.status(400).json({
                 success: false,
-                error: 'Комплектация не может быть удалена, так как она входит в действующий заказ. Удаление возможно только после исполнения заказа или завершения мероприятия.'
+                error: 'Нельзя удалить комплектацию, которая используется в активных заказах'
             });
             return;
         }
 
-        await prisma.subService.delete({ where: { id } });
-        res.json({ success: true });
+        await prisma.subService.delete({
+            where: { id: parseInt(id) }
+        });
+
+        res.json({ success: true, message: 'Комплектация удалена' });
     } catch (error) {
         console.error('Ошибка удаления комплектации:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при удалении комплектации' });
-    }
-});
-
-// Массовое обновление порядка комплектующих
-router.patch('/order', async (req: Request, res: Response) => {
-    try {
-        const { orders } = req.body; // [{id, order}, ...]
-        if (!Array.isArray(orders)) {
-            res.status(400).json({ success: false, error: 'orders должен быть массивом' });
-            return;
-        }
-        for (const item of orders) {
-            if (!item.id || typeof item.order !== 'number') continue;
-            await prisma.subService.update({
-                where: { id: Number(item.id) },
-                data: { order: item.order },
-            });
-        }
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Ошибка массового обновления порядка:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при обновлении порядка' });
-    }
-});
-
-// Получить варианты комплектации
-router.get('/:id/variants', async (req: Request, res: Response) => {
-    try {
-        const id = Number(req.params['id']);
-        if (isNaN(id)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID' });
-            return;
-        }
-
-        const variants = await prisma.subServiceVariant.findMany({
-            where: { subServiceId: id },
-            orderBy: { id: 'asc' }
-        });
-
-        res.json({ success: true, variants });
-    } catch (error) {
-        console.error('Ошибка получения вариантов:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при получении вариантов' });
-    }
-});
-
-// Создать вариант комплектации
-router.post('/:id/variants', async (req: Request, res: Response) => {
-    try {
-        const id = Number(req.params['id']);
-        const { name, price, media, videos } = req.body;
-
-        if (isNaN(id)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID' });
-            return;
-        }
-        if (!name) {
-            res.status(400).json({ success: false, error: 'Название варианта обязательно' });
-            return;
-        }
-        if (!price || price <= 0) {
-            res.status(400).json({ success: false, error: 'Цена должна быть больше 0' });
-            return;
-        }
-
-        const variant = await prisma.subServiceVariant.create({
-            data: {
-                name,
-                price: Number(price),
-                media: media || [],
-                videos: videos || [],
-                subServiceId: id
-            }
-        });
-
-        res.status(201).json({ success: true, variant });
-    } catch (error) {
-        console.error('Ошибка создания варианта:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при создании варианта' });
-    }
-});
-
-// Обновить вариант комплектации
-router.put('/:id/variants/:variantId', async (req: Request, res: Response) => {
-    try {
-        const id = Number(req.params['id']);
-        const variantId = Number(req.params['variantId']);
-        const { name, price, media, videos, isActive } = req.body;
-
-        if (isNaN(id) || isNaN(variantId)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID' });
-            return;
-        }
-
-        const variant = await prisma.subServiceVariant.update({
-            where: { id: variantId },
-            data: {
-                name,
-                price: Number(price),
-                media: media || [],
-                videos: videos || [],
-                isActive
-            }
-        });
-
-        res.json({ success: true, variant });
-    } catch (error) {
-        console.error('Ошибка обновления варианта:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при обновлении варианта' });
-    }
-});
-
-// Удалить вариант комплектации
-router.delete('/:id/variants/:variantId', async (req: Request, res: Response) => {
-    try {
-        const id = Number(req.params['id']);
-        const variantId = Number(req.params['variantId']);
-
-        if (isNaN(id) || isNaN(variantId)) {
-            res.status(400).json({ success: false, error: 'Некорректный ID' });
-            return;
-        }
-
-        await prisma.subServiceVariant.delete({
-            where: {
-                id: variantId,
-                subServiceId: id
-            }
-        });
-
-        res.json({ success: true });
-    } catch (error) {
-        console.error('Ошибка удаления варианта:', error);
-        res.status(500).json({ success: false, error: 'Ошибка при удалении варианта' });
+        res.status(500).json({ success: false, error: 'Ошибка удаления комплектации' });
     }
 });
 

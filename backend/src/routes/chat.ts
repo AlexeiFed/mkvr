@@ -402,7 +402,7 @@ router.post('/:chatId/messages', authenticateToken, async (req: AuthenticatedReq
         }
 
         // Отправляем push-уведомление получателю (если это не админ)
-        if (userRole !== 'ADMIN') {
+        if (userRole !== 'admin') {
             await sendPushNotification(chat.userId, {
                 title: `Новое сообщение от ${message.user.firstName} ${message.user.lastName}`,
                 body: content.length > 50 ? content.substring(0, 50) + '...' : content,
@@ -464,7 +464,7 @@ router.post('/start', authenticateToken, async (req: AuthenticatedRequest, res: 
         // Проверяем, есть ли уже чат с этим пользователем
         const existingChat = await prisma.chat.findFirst({
             where: {
-                userId: parseInt(targetUserId)
+                parentId: parseInt(targetUserId)
             }
         });
 
@@ -476,10 +476,11 @@ router.post('/start', authenticateToken, async (req: AuthenticatedRequest, res: 
         // Создаем новый чат
         const chat = await prisma.chat.create({
             data: {
-                userId: parseInt(targetUserId)
+                parentId: parseInt(targetUserId),
+                adminId: adminId
             },
             include: {
-                user: {
+                users_chats_parentIdTousers: {
                     select: {
                         id: true,
                         firstName: true,
