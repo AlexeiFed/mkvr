@@ -37,12 +37,12 @@ router.get('/child', authenticateToken, requireRole(['CHILD']), async (req: Requ
                     }
                 }
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' } as any
         });
 
         console.log('[child workshops] latest order:', latestOrder);
 
-        if (!latestOrder?.workshop?.school) {
+        if (!latestOrder?.workshop?.schoolId) {
             res.status(400).json({
                 success: false,
                 error: 'Данные школы не заполнены'
@@ -185,7 +185,7 @@ router.get('/', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (re
         const workshops = await prisma.workshop.findMany({
             where: {
                 isActive: true
-            },
+            } as any,
             include: {
                 service: true,
                 school: true,
@@ -547,7 +547,7 @@ router.post('/', authenticateToken, requireRole(['ADMIN']), async (req: Request,
                 date: new Date(date),
                 time,
                 notes: notes || null,
-            },
+            } as any,
             include: {
                 service: {
                     select: {

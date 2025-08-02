@@ -32,8 +32,6 @@ webpush.setVapidDetails(
     vapidKeys.privateKey
 );
 
-
-
 // GET /api/chat/vapid-public-key - Получить публичный VAPID ключ
 router.get('/vapid-public-key', (_req: Request, res: Response) => {
     res.json({ publicKey: vapidKeys.publicKey });
@@ -72,8 +70,9 @@ router.post('/subscribe', authenticateToken, async (req: AuthenticatedRequest, r
                 userId,
                 endpoint,
                 p256dh,
-                auth
-            }
+                auth,
+                updatedAt: new Date()
+            } as any
         });
 
         res.json({ success: true, message: 'Подписка успешно создана' });
@@ -128,11 +127,11 @@ router.get('/conversations', authenticateToken, async (req: AuthenticatedRequest
         }
 
         let chats;
-        if (userRole === 'ADMIN') {
+        if (userRole === 'admin') {
             // Админ видит все чаты
             chats = await prisma.chat.findMany({
                 include: {
-                    user: {
+                    users_chats_parentIdTousers: {
                         select: {
                             id: true,
                             firstName: true,
@@ -141,7 +140,7 @@ router.get('/conversations', authenticateToken, async (req: AuthenticatedRequest
                         }
                     },
                     messages: {
-                        orderBy: { createdAt: 'desc' },
+                        orderBy: { timestamp: 'desc' } as any,
                         take: 1
                     }
                 },
@@ -150,9 +149,9 @@ router.get('/conversations', authenticateToken, async (req: AuthenticatedRequest
         } else {
             // Пользователь видит только свои чаты
             chats = await prisma.chat.findMany({
-                where: { userId },
+                where: { parentId: userId } as any,
                 include: {
-                    user: {
+                    users_chats_parentIdTousers: {
                         select: {
                             id: true,
                             firstName: true,
@@ -161,7 +160,7 @@ router.get('/conversations', authenticateToken, async (req: AuthenticatedRequest
                         }
                     },
                     messages: {
-                        orderBy: { createdAt: 'desc' },
+                        orderBy: { timestamp: 'desc' } as any,
                         take: 1
                     }
                 },
@@ -197,7 +196,7 @@ router.get('/:chatId/messages', authenticateToken, async (req: AuthenticatedRequ
         const chat = await prisma.chat.findUnique({
             where: { id: chatId },
             include: {
-                user: {
+                users_chats_parentIdTousers: {
                     select: {
                         id: true,
                         firstName: true,
@@ -217,7 +216,7 @@ router.get('/:chatId/messages', authenticateToken, async (req: AuthenticatedRequ
         }
 
         // Проверяем права доступа (только участник чата или админ)
-        if (chat.userId !== userId && req.user?.role !== 'ADMIN') {
+        if (chat.parentId !== userId && req.user?.role !== 'admin') {
             res.status(403).json({
                 success: false,
                 error: 'Нет прав доступа к чату'
@@ -228,7 +227,7 @@ router.get('/:chatId/messages', authenticateToken, async (req: AuthenticatedRequ
         const messages = await prisma.message.findMany({
             where: { chatId },
             include: {
-                user: {
+                users: {
                     select: {
                         id: true,
                         firstName: true,
@@ -237,7 +236,7 @@ router.get('/:chatId/messages', authenticateToken, async (req: AuthenticatedRequ
                     }
                 }
             },
-            orderBy: { createdAt: 'asc' }
+            orderBy: { timestamp: 'asc' } as any
         });
 
         res.json({ success: true, messages });
@@ -268,7 +267,7 @@ router.post('/:chatId/mark-read', authenticateToken, async (req: AuthenticatedRe
         const chat = await prisma.chat.findUnique({
             where: { id: chatId },
             include: {
-                user: {
+                users_chats_parentIdTousers: {
                     select: {
                         id: true,
                         firstName: true,
@@ -288,7 +287,7 @@ router.post('/:chatId/mark-read', authenticateToken, async (req: AuthenticatedRe
         }
 
         // Проверяем права доступа (только участник чата или админ)
-        if (chat.userId !== userId && req.user?.role !== 'ADMIN') {
+        if (chat.parentId !== userId && req.user?.role !== 'admin') {
             res.status(403).json({
                 success: false,
                 error: 'Нет прав доступа к чату'
@@ -335,7 +334,7 @@ router.post('/:chatId/messages', authenticateToken, async (req: AuthenticatedReq
         const chat = await prisma.chat.findUnique({
             where: { id: chatId },
             include: {
-                user: {
+                users_chats_parentIdTousers: {
                     select: {
                         id: true,
                         firstName: true,
@@ -355,7 +354,7 @@ router.post('/:chatId/messages', authenticateToken, async (req: AuthenticatedReq
         }
 
         // Проверяем права доступа (только участник чата или админ)
-        if (chat.userId !== userId && userRole !== 'ADMIN') {
+        if (chat.parentId !== userId && userRole !== 'admin') {
             res.status(403).json({
                 success: false,
                 error: 'Нет прав доступа к чату'
@@ -367,11 +366,11 @@ router.post('/:chatId/messages', authenticateToken, async (req: AuthenticatedReq
         const message = await prisma.message.create({
             data: {
                 chatId,
-                userId,
+                senderId: userId,
                 content: content.trim()
             },
             include: {
-                user: {
+                users: {
                     select: {
                         id: true,
                         firstName: true,
@@ -403,8 +402,8 @@ router.post('/:chatId/messages', authenticateToken, async (req: AuthenticatedReq
 
         // Отправляем push-уведомление получателю (если это не админ)
         if (userRole !== 'admin') {
-            await sendPushNotification(chat.userId, {
-                title: `Новое сообщение от ${message.user.firstName} ${message.user.lastName}`,
+            await sendPushNotification(chat.parentId, {
+                title: `Новое сообщение от ${message.users.firstName} ${message.users.lastName}`,
                 body: content.length > 50 ? content.substring(0, 50) + '...' : content,
                 icon: '/icon-192x192.png',
                 badge: '/badge-72x72.png',
@@ -432,7 +431,7 @@ router.post('/start', authenticateToken, async (req: AuthenticatedRequest, res: 
         const adminId = req.user?.id;
         const userRole = req.user?.role;
 
-        if (!adminId || userRole !== 'ADMIN') {
+        if (!adminId || userRole !== 'admin') {
             res.status(403).json({
                 success: false,
                 error: 'Только администраторы могут создавать чаты'
@@ -507,7 +506,7 @@ router.post('/start-child', authenticateToken, async (req: AuthenticatedRequest,
         const childId = req.user?.id;
         const userRole = req.user?.role;
 
-        if (!childId || userRole !== 'CHILD') {
+        if (!childId || userRole !== 'child') {
             res.status(403).json({
                 success: false,
                 error: 'Только дети могут создавать чаты с администраторами'
@@ -517,7 +516,7 @@ router.post('/start-child', authenticateToken, async (req: AuthenticatedRequest,
 
         // Находим первого доступного администратора
         const admin = await prisma.user.findFirst({
-            where: { role: 'ADMIN' }
+            where: { role: 'admin' }
         });
 
         if (!admin) {
@@ -531,7 +530,7 @@ router.post('/start-child', authenticateToken, async (req: AuthenticatedRequest,
         // Проверяем, есть ли уже чат с этим ребенком
         const existingChat = await prisma.chat.findFirst({
             where: {
-                userId: childId
+                parentId: childId
             }
         });
 
@@ -543,10 +542,11 @@ router.post('/start-child', authenticateToken, async (req: AuthenticatedRequest,
         // Создаем новый чат
         const chat = await prisma.chat.create({
             data: {
-                userId: childId
+                parentId: childId,
+                adminId: admin.id
             },
             include: {
-                user: {
+                users_chats_parentIdTousers: {
                     select: {
                         id: true,
                         firstName: true,
@@ -573,7 +573,7 @@ router.post('/send-to-all', authenticateToken, async (req: AuthenticatedRequest,
         const adminId = req.user?.id;
         const userRole = req.user?.role;
 
-        if (!adminId || userRole !== 'ADMIN') {
+        if (!adminId || userRole !== 'admin') {
             res.status(403).json({
                 success: false,
                 error: 'Только администраторы могут отправлять сообщения всем'
@@ -595,7 +595,7 @@ router.post('/send-to-all', authenticateToken, async (req: AuthenticatedRequest,
         const users = await prisma.user.findMany({
             where: {
                 role: {
-                    in: ['CHILD', 'PARENT']
+                    in: ['child', 'parent']
                 }
             }
         });
@@ -606,14 +606,15 @@ router.post('/send-to-all', authenticateToken, async (req: AuthenticatedRequest,
             // Находим или создаем чат с каждым пользователем
             let chat = await prisma.chat.findFirst({
                 where: {
-                    userId: user.id
+                    parentId: user.id
                 }
             });
 
             if (!chat) {
                 chat = await prisma.chat.create({
                     data: {
-                        userId: user.id
+                        parentId: user.id,
+                        adminId: adminId
                     }
                 });
             }
@@ -622,11 +623,11 @@ router.post('/send-to-all', authenticateToken, async (req: AuthenticatedRequest,
             const message = await prisma.message.create({
                 data: {
                     chatId: chat.id,
-                    userId: adminId,
+                    senderId: adminId,
                     content: content
                 },
                 include: {
-                    user: {
+                    users: {
                         select: {
                             id: true,
                             firstName: true,

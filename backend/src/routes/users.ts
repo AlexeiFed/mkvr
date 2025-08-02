@@ -41,7 +41,7 @@ router.get('/', async (req: Request, res: Response) => {
         // Получаем данные о школах и классах через заказы для детей
         const processedUsers = await Promise.all(
             users.map(async (user) => {
-                if (user.role === 'CHILD') {
+                if (user.role === 'child') {
                     // Для детей получаем данные через их заказы
                     const latestOrder = await prisma.order.findFirst({
                         where: { childId: user.id },
