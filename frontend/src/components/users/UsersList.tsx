@@ -7,7 +7,6 @@
 
 import React, { useState, useEffect } from 'react';
 import {
-    Box,
     Table,
     TableBody,
     TableCell,
@@ -17,37 +16,40 @@ import {
     Paper,
     IconButton,
     Chip,
-    Select,
-    MenuItem,
+    Typography,
+    Box,
+    CircularProgress,
     FormControl,
     InputLabel,
+    Select,
+    MenuItem,
     Pagination,
-    Typography,
-    CircularProgress,
     Dialog,
     DialogTitle,
     DialogContent,
     DialogActions,
-    Button
+    Button,
 } from '@mui/material';
-import { Visibility, Delete } from '@mui/icons-material';
+import { Delete, Visibility } from '@mui/icons-material';
 import type { User } from '../../types';
+import api from '../../services/api';
 
 interface UsersListProps {
     users: User[];
     total: number;
     filters: {
-        school?: string;
-        grade?: string;
-        city?: string;
-        role?: string;
         page: number;
-        pageSize: number;
+        limit: number;
+        search?: string;
+        role?: string;
+        city?: string;
+        schoolId?: number;
+        classId?: number;
     };
     isLoading: boolean;
     onFilterChange: (filters: Partial<UsersListProps['filters']>) => void;
     onPageChange: (page: number) => void;
-    onUserSelect: (userId: number) => void;
+    onUserSelect: (user: User) => void;
     onUserDelete: (userId: number) => void;
 }
 
@@ -69,31 +71,28 @@ const UsersList: React.FC<UsersListProps> = ({
 
     useEffect(() => {
         // Загрузка городов из API
-        fetch('http://localhost:3001/api/schools/cities')
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.cities) {
-                    setCities(data.cities);
+        api.get('/schools/cities')
+            .then(res => {
+                if (res.data.success && res.data.cities) {
+                    setCities(res.data.cities);
                 }
             })
             .catch(err => console.error('Ошибка загрузки городов:', err));
 
         // Загрузка школ из API
-        fetch('http://localhost:3001/api/schools/list')
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.schools) {
-                    setSchools(data.schools);
+        api.get('/schools/list')
+            .then(res => {
+                if (res.data.success && res.data.schools) {
+                    setSchools(res.data.schools);
                 }
             })
             .catch(err => console.error('Ошибка загрузки школ:', err));
 
         // Загрузка классов из API
-        fetch('http://localhost:3001/api/schools/classes')
-            .then(res => res.json())
-            .then(data => {
-                if (data.success && data.classes) {
-                    setClasses(data.classes);
+        api.get('/schools/classes')
+            .then(res => {
+                if (res.data.success && res.data.classes) {
+                    setClasses(res.data.classes);
                 }
             })
             .catch(err => console.error('Ошибка загрузки классов:', err));
@@ -141,7 +140,7 @@ const UsersList: React.FC<UsersListProps> = ({
         }
     };
 
-    const totalPages = Math.ceil(total / filters.pageSize);
+    const totalPages = Math.ceil(total / filters.limit);
 
     if (isLoading) {
         return (
@@ -161,8 +160,8 @@ const UsersList: React.FC<UsersListProps> = ({
                         value={filters.city || ''}
                         onChange={(e) => {
                             handleFilterChange('city', e.target.value || undefined);
-                            handleFilterChange('school', undefined);
-                            handleFilterChange('grade', undefined);
+                            handleFilterChange('schoolId', undefined);
+                            handleFilterChange('classId', undefined);
                         }}
                         label="Город"
                     >
@@ -176,10 +175,10 @@ const UsersList: React.FC<UsersListProps> = ({
                 <FormControl sx={{ minWidth: 200 }}>
                     <InputLabel>Школа</InputLabel>
                     <Select
-                        value={filters.school || ''}
+                        value={filters.schoolId || ''}
                         onChange={(e) => {
-                            handleFilterChange('school', e.target.value || undefined);
-                            handleFilterChange('grade', undefined);
+                            handleFilterChange('schoolId', e.target.value || undefined);
+                            handleFilterChange('classId', undefined);
                         }}
                         label="Школа"
                         disabled={!filters.city}
@@ -196,14 +195,14 @@ const UsersList: React.FC<UsersListProps> = ({
                 <FormControl sx={{ minWidth: 200 }}>
                     <InputLabel>Класс</InputLabel>
                     <Select
-                        value={filters.grade || ''}
-                        onChange={(e) => handleFilterChange('grade', e.target.value || undefined)}
+                        value={filters.classId || ''}
+                        onChange={(e) => handleFilterChange('classId', e.target.value || undefined)}
                         label="Класс"
-                        disabled={!filters.school}
+                        disabled={!filters.schoolId}
                     >
                         <MenuItem value="">Все классы</MenuItem>
                         {classes
-                            .filter(cls => !filters.school || cls.school?.id === parseInt(filters.school))
+                            .filter(cls => !filters.schoolId || cls.school?.id === filters.schoolId)
                             .map(cls => (
                                 <MenuItem key={cls.id} value={cls.id}>{cls.name}</MenuItem>
                             ))}
@@ -265,7 +264,7 @@ const UsersList: React.FC<UsersListProps> = ({
                                 </TableCell>
                                 <TableCell>
                                     <IconButton
-                                        onClick={() => onUserSelect(user.id)}
+                                        onClick={() => onUserSelect(user)}
                                         size="small"
                                         color="primary"
                                     >

@@ -43,6 +43,7 @@ import {
     Close as CloseIcon
 } from '@mui/icons-material';
 import type { User } from '../../store/authSlice';
+import api from '../../services/api';
 
 interface School {
     id: number;
@@ -184,12 +185,11 @@ const ChildProfile: React.FC<ChildProfileProps> = ({
         setLoadingSchools(true);
         setSchoolsError(null);
         try {
-            const response = await fetch('http://localhost:3001/api/schools');
-            if (!response.ok) {
+            const response = await api.get('/schools');
+            if (!response.data.success) {
                 throw new Error('Ошибка загрузки школ');
             }
-            const data = await response.json();
-            setSchools(data.schools || []);
+            setSchools(response.data.schools || []);
         } catch (error) {
             console.error('Ошибка загрузки школ:', error);
             setSchoolsError('Ошибка загрузки школ: ' + (error instanceof Error ? error.message : 'Неизвестная ошибка'));

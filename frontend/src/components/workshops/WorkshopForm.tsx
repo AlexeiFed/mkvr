@@ -20,7 +20,7 @@ import {
 import Autocomplete from '@mui/material/Autocomplete';
 import type { RootState } from '../../store';
 import { createWorkshop, updateWorkshop } from '../../store/workshopsSlice';
-import { fetchSchoolClasses } from '../../store/schoolsSlice';
+import { fetchSchools } from '../../store/schoolsSlice';
 import { fetchServices } from '../../store/servicesSlice';
 import type { WorkshopCreateData } from '../../store/workshopsSlice';
 import type { Workshop } from '../../types';
@@ -82,7 +82,7 @@ const WorkshopForm: React.FC<WorkshopFormProps> = ({
     // Подгружаем классы при выборе школы
     useEffect(() => {
         if (formData.schoolId) {
-            dispatch(fetchSchoolClasses(Number(formData.schoolId)));
+            dispatch(fetchSchools());
         }
     }, [dispatch, formData.schoolId]);
 

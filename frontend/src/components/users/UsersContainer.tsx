@@ -13,8 +13,8 @@ import { fetchUsers, setFilters, clearError, deleteUser } from '../../store/user
 import UsersList from './UsersList';
 import UserDetails from './UserDetails';
 import { io as socketIOClient, Socket } from 'socket.io-client';
-
-const SOCKET_URL = 'http://localhost:3001';
+import api from '../../services/api';
+import type { User } from '../../types';
 
 const UsersContainer: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -27,7 +27,9 @@ const UsersContainer: React.FC = () => {
 
     // WebSocket для real-time обновлений
     useEffect(() => {
-        const socket: Socket = socketIOClient(SOCKET_URL, {
+        // Используем API URL для WebSocket подключения
+        const socketUrl = api.defaults.baseURL?.replace('/api', '') || 'http://localhost:3001';
+        const socket: Socket = socketIOClient(socketUrl, {
             transports: ['websocket'],
             withCredentials: true
         });
@@ -66,8 +68,8 @@ const UsersContainer: React.FC = () => {
         dispatch(setFilters({ page }));
     };
 
-    const handleUserSelect = (userId: number) => {
-        setSelectedUserId(userId);
+    const handleUserSelect = (user: User) => {
+        setSelectedUserId(user.id);
     };
 
     const handleCloseDetails = () => {
@@ -98,7 +100,14 @@ const UsersContainer: React.FC = () => {
                 <UsersList
                     users={users}
                     total={total}
-                    filters={filters}
+                    filters={{
+                        page: filters.page,
+                        limit: filters.pageSize,
+                        role: filters.role,
+                        city: filters.city,
+                        schoolId: filters.school ? parseInt(filters.school) : undefined,
+                        classId: filters.grade ? parseInt(filters.grade) : undefined,
+                    }}
                     isLoading={isLoading}
                     onFilterChange={handleFilterChange}
                     onPageChange={handlePageChange}

@@ -21,8 +21,9 @@ import {
     TableHead,
     TableRow,
     Paper,
+    IconButton,
 } from '@mui/material';
-import { ArrowBack as ArrowBackIcon, Edit as EditIcon, Add as AddIcon } from '@mui/icons-material';
+import { ArrowBack as ArrowBackIcon, Edit as EditIcon, Add as AddIcon, Edit as Edit, Delete } from '@mui/icons-material';
 import ClassForm from './ClassForm';
 import ClassEditForm from './ClassEditForm';
 import { fetchSchoolById } from '../../store/schoolsSlice';
@@ -83,8 +84,13 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
         await dispatch(fetchSchoolById(schoolId));
     };
 
-    const handleClassClick = (classItem: Class) => {
+    const handleEditClass = (classItem: Class) => {
         setEditingClass(classItem);
+    };
+
+    const handleDeleteClass = (classId: number) => {
+        // TODO: Реализовать удаление класса
+        console.log('Удаление класса:', classId);
     };
 
     const handleEditCancel = () => {
@@ -172,24 +178,21 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
                                 {currentSchool.name}
                             </Typography>
                         </Box>
-                        <Box mb={2}>
-                            <Typography variant="subtitle2" color="text.secondary">
-                                Адрес
+                        <Typography variant="body1" color="text.secondary" sx={{ mb: 2 }}>
+                            {currentSchool.address}
+                        </Typography>
+
+                        <Box sx={{ mb: 3 }}>
+                            <Typography variant="h6" gutterBottom>
+                                Информация о школе
                             </Typography>
-                            <Typography variant="body1">
-                                {currentSchool.address}
+                            <Typography variant="body2" color="text.secondary">
+                                Статус: {currentSchool.isActive ? 'Активна' : 'Неактивна'}
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary">
+                                Дата создания: {new Date(currentSchool.createdAt).toLocaleDateString('ru-RU')}
                             </Typography>
                         </Box>
-                        {currentSchool.note && (
-                            <Box mb={2}>
-                                <Typography variant="subtitle2" color="text.secondary">
-                                    Примечание
-                                </Typography>
-                                <Typography variant="body1">
-                                    {currentSchool.note}
-                                </Typography>
-                            </Box>
-                        )}
                         <Box mb={2}>
                             <Typography variant="subtitle2" color="text.secondary">
                                 Статус
@@ -213,35 +216,39 @@ const SchoolDetails: React.FC<SchoolDetailsProps> = ({
                                 <Table stickyHeader size="small">
                                     <TableHead>
                                         <TableRow>
-                                            <TableCell sx={{ fontWeight: 'bold' }}>Класс</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold' }}>Смена</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold' }}>Преподаватель</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold' }}>Телефон</TableCell>
-                                            <TableCell sx={{ fontWeight: 'bold' }}>Примечание</TableCell>
+                                            <TableCell>ID</TableCell>
+                                            <TableCell>Название</TableCell>
+                                            <TableCell>Школа</TableCell>
+                                            <TableCell>Дата создания</TableCell>
+                                            <TableCell>Действия</TableCell>
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {sortedClasses.map((classItem) => (
-                                            <TableRow
-                                                key={classItem.id}
-                                                hover
-                                                onClick={() => handleClassClick(classItem)}
-                                                sx={{ cursor: 'pointer' }}
-                                            >
-                                                <TableCell sx={{ fontWeight: 'bold' }}>
-                                                    {classItem.name}
+                                        {currentSchool.classes?.map((classItem) => (
+                                            <TableRow key={classItem.id}>
+                                                <TableCell>{classItem.id}</TableCell>
+                                                <TableCell>{classItem.name}</TableCell>
+                                                <TableCell>
+                                                    {classItem.school?.name || '-'}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {classItem.shift || '-'}
+                                                    {new Date(classItem.createdAt).toLocaleDateString('ru-RU')}
                                                 </TableCell>
                                                 <TableCell>
-                                                    {classItem.teacher || '-'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {classItem.phone || '-'}
-                                                </TableCell>
-                                                <TableCell>
-                                                    {classItem.note || '-'}
+                                                    <IconButton
+                                                        size="small"
+                                                        color="primary"
+                                                        onClick={() => handleEditClass(classItem)}
+                                                    >
+                                                        <Edit />
+                                                    </IconButton>
+                                                    <IconButton
+                                                        size="small"
+                                                        color="error"
+                                                        onClick={() => handleDeleteClass(classItem.id)}
+                                                    >
+                                                        <Delete />
+                                                    </IconButton>
                                                 </TableCell>
                                             </TableRow>
                                         ))}

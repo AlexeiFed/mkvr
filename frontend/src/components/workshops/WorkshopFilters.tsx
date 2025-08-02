@@ -7,7 +7,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
-import { fetchSchoolClasses } from '../../store/schoolsSlice';
+import { fetchSchools } from '../../store/schoolsSlice';
 import {
     Box,
     FormControl,
@@ -74,7 +74,7 @@ const WorkshopFilters: React.FC<WorkshopFiltersProps> = ({ filters, onFilterChan
     // Подгружаем классы при изменении фильтра "Школа"
     useEffect(() => {
         if (filters.schoolId) {
-            dispatch(fetchSchoolClasses(Number(filters.schoolId)));
+            dispatch(fetchSchools());
         }
     }, [dispatch, filters.schoolId]);
 
