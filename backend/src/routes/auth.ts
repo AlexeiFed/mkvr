@@ -150,7 +150,7 @@ router.post('/register', async (req: Request, res: Response) => {
                         password: await bcrypt.hash('child123', SALT_ROUNDS),
                         firstName: childFirstName,
                         lastName: childLastName,
-                        role: 'CHILD',
+                        role: 'child' as any,
                         age: childAge,
                     },
                     select: {

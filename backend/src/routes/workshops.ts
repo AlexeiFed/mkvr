@@ -61,7 +61,7 @@ router.get('/child', authenticateToken, requireRole(['CHILD']), async (req: Requ
                     gte: now // только будущие мастер-классы
                 },
                 isActive: true
-            },
+            } as any,
             include: {
                 service: {
                     select: {
@@ -974,7 +974,7 @@ router.get('/:id/executors', authenticateToken, requireRole(['ADMIN', 'EXECUTOR'
                     }
                 }
             },
-            orderBy: { createdAt: 'desc' }
+            orderBy: { createdAt: 'desc' } as any
         });
 
         res.json(executors);
