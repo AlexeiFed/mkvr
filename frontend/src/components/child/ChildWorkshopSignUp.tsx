@@ -72,10 +72,10 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
 
     // Галерея и видео модалки
     const [galleryOpen, setGalleryOpen] = useState(false);
-    const [galleryPhotos, setGalleryPhotos] = useState<string[]>([]);
+    const [galleryPhotos] = useState<string[]>([]);
     const [galleryIndex, setGalleryIndex] = useState(0);
     const [videoOpen, setVideoOpen] = useState(false);
-    const [videoUrl, setVideoUrl] = useState<string>('');
+    const [videoUrl] = useState<string>('');
 
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
