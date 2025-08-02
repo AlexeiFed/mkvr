@@ -1,5 +1,17 @@
 # Changelog
 
+## [2025-08-02] - Исправление конфигурации SOCKET_URL и chatSlice
+
+### Исправлено
+- Исправлен VITE_SOCKET_URL в .env.production на https://mkvr-backend.onrender.com
+- Заменены все fetch вызовы в chatSlice.ts на api сервис
+- Исправлена ошибка 404 для /api/chat/conversations в продакшне
+
+### Технические изменения
+- Добавлен VITE_SOCKET_URL=https://mkvr-backend.onrender.com в .env.production
+- Все API вызовы в chatSlice теперь используют централизованный api сервис
+- Убраны относительные URL которые приводили к ошибкам на GitHub Pages
+
 ## [2025-01-29] - Замена хардкода localhost на API сервис в authSlice
 
 ### Исправлено

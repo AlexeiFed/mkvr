@@ -8,24 +8,20 @@
 import { createSlice, createAsyncThunk } from '@reduxjs/toolkit';
 import type { PayloadAction } from '@reduxjs/toolkit';
 import type { Chat, Message, PushSubscription } from '../types';
+import { api } from '../services/api';
 
 // Async thunks
 export const fetchConversations = createAsyncThunk(
     'chat/fetchConversations',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await fetch('/api/chat/conversations', {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
+            const response = await api.get('/chat/conversations');
 
-            if (!response.ok) {
+            if (!response.data) {
                 throw new Error('Ошибка получения чатов');
             }
 
-            const data = await response.json();
-            return data.chats;
+            return response.data.chats;
         } catch (error) {
             return rejectWithValue(error instanceof Error ? error.message : 'Ошибка получения чатов');
         }
@@ -36,18 +32,13 @@ export const fetchMessages = createAsyncThunk(
     'chat/fetchMessages',
     async (chatId: number, { rejectWithValue }) => {
         try {
-            const response = await fetch(`/api/chat/${chatId}/messages`, {
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
+            const response = await api.get(`/chat/${chatId}/messages`);
 
-            if (!response.ok) {
+            if (!response.data) {
                 throw new Error('Ошибка получения сообщений');
             }
 
-            const data = await response.json();
-            return { chatId, messages: data.messages };
+            return { chatId, messages: response.data.messages };
         } catch (error) {
             return rejectWithValue(error instanceof Error ? error.message : 'Ошибка получения сообщений');
         }
@@ -58,21 +49,13 @@ export const sendMessage = createAsyncThunk(
     'chat/sendMessage',
     async ({ chatId, content }: { chatId: number; content: string }, { rejectWithValue }) => {
         try {
-            const response = await fetch(`/api/chat/${chatId}/messages`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ content })
-            });
+            const response = await api.post(`/chat/${chatId}/messages`, { content });
 
-            if (!response.ok) {
+            if (!response.data) {
                 throw new Error('Ошибка отправки сообщения');
             }
 
-            const data = await response.json();
-            return data.message;
+            return response.data.message;
         } catch (error) {
             return rejectWithValue(error instanceof Error ? error.message : 'Ошибка отправки сообщения');
         }
@@ -83,21 +66,13 @@ export const startChat = createAsyncThunk(
     'chat/startChat',
     async (parentId: number, { rejectWithValue }) => {
         try {
-            const response = await fetch('/api/chat/start', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ parentId })
-            });
+            const response = await api.post('/chat/start', { parentId });
 
-            if (!response.ok) {
+            if (!response.data) {
                 throw new Error('Ошибка создания чата');
             }
 
-            const data = await response.json();
-            return data.chat;
+            return response.data.chat;
         } catch (error) {
             return rejectWithValue(error instanceof Error ? error.message : 'Ошибка создания чата');
         }
@@ -108,20 +83,13 @@ export const startChildChat = createAsyncThunk(
     'chat/startChildChat',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await fetch('/api/chat/start-child', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
+            const response = await api.post('/chat/start-child');
 
-            if (!response.ok) {
+            if (!response.data) {
                 throw new Error('Ошибка создания чата');
             }
 
-            const data = await response.json();
-            return data.chat;
+            return response.data.chat;
         } catch (error) {
             return rejectWithValue(error instanceof Error ? error.message : 'Ошибка создания чата');
         }
@@ -132,17 +100,7 @@ export const resetUnreadCount = createAsyncThunk(
     'chat/resetUnreadCount',
     async (chatId: number, { rejectWithValue }) => {
         try {
-            const response = await fetch(`/api/chat/${chatId}/mark-read`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
-
-            if (!response.ok) {
-                throw new Error('Ошибка сброса счетчика');
-            }
+            await api.post(`/chat/${chatId}/mark-read`);
 
             return { chatId };
         } catch (error) {
@@ -155,20 +113,9 @@ export const subscribeToPush = createAsyncThunk(
     'chat/subscribeToPush',
     async (subscription: PushSubscription, { rejectWithValue }) => {
         try {
-            const response = await fetch('/api/chat/subscribe', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify(subscription)
-            });
+            const response = await api.post('/chat/subscribe', subscription);
 
-            if (!response.ok) {
-                throw new Error('Ошибка подписки на уведомления');
-            }
-
-            return await response.json();
+            return response.data;
         } catch (error) {
             return rejectWithValue(error instanceof Error ? error.message : 'Ошибка подписки на уведомления');
         }
@@ -179,18 +126,9 @@ export const unsubscribeFromPush = createAsyncThunk(
     'chat/unsubscribeFromPush',
     async (_, { rejectWithValue }) => {
         try {
-            const response = await fetch('/api/chat/unsubscribe', {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                }
-            });
+            const response = await api.post('/chat/unsubscribe');
 
-            if (!response.ok) {
-                throw new Error('Ошибка отписки от уведомлений');
-            }
-
-            return await response.json();
+            return response.data;
         } catch (error) {
             return rejectWithValue(error instanceof Error ? error.message : 'Ошибка отписки от уведомлений');
         }
@@ -203,21 +141,9 @@ export const sendMessageToAll = createAsyncThunk(
         try {
             const content = formData.get('content') as string;
 
-            const response = await fetch('/api/chat/send-to-all', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({ content })
-            });
+            const response = await api.post('/chat/send-to-all', { content });
 
-            if (!response.ok) {
-                throw new Error('Ошибка отправки сообщения всем');
-            }
-
-            const data = await response.json();
-            return data;
+            return response.data;
         } catch (error) {
             return rejectWithValue(error instanceof Error ? error.message : 'Ошибка отправки сообщения всем');
         }
