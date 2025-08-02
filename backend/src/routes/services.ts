@@ -1,4 +1,3 @@
-// @ts-nocheck
 /**
  * @file: services.ts
  * @description: Роутер для CRUD операций с услугами (Service)
@@ -10,7 +9,7 @@ import { Router, Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 
 const router = Router();
-const prisma = new PrismaClient() as any;
+const prisma = new PrismaClient();
 
 // Добавить функцию нормализации
 function normalizePhotosField(subService: any) {

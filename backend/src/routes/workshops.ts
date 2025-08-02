@@ -166,6 +166,14 @@ router.get('/child', authenticateToken, requireRole(['CHILD']), async (req: Requ
 router.get('/', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']), async (req: Request, res: Response) => {
     try {
         const { date, city, schoolId, classId, serviceId, status } = req.query;
+        const userId = (req as any).user?.id;
+
+        if (!userId) {
+            return res.status(401).json({
+                success: false,
+                error: 'Пользователь не авторизован'
+            });
+        }
 
         const where: any = {};
 
@@ -894,10 +902,11 @@ router.get('/statistics', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']),
     console.log('URL:', req.url);
     console.log('Method:', req.method);
     console.log('Headers:', req.headers);
-    console.log('User:', req.user);
+    console.log('User:', (req as any).user);
 
     try {
-        console.log('Получен запрос статистики от пользователя:', req.user?.id);
+        const userId = (req as any).user?.id;
+        console.log('Получен запрос статистики от пользователя:', userId);
 
         // Общее количество мастер-классов
         const total = await prisma.workshop.count();
@@ -926,7 +935,7 @@ router.get('/statistics', authenticateToken, requireRole(['ADMIN', 'EXECUTOR']),
         // Общая выручка
         const orders = await prisma.order.findMany({
             where: {
-                paymentStatus: 'paid'
+                paymentStatus: 'PAID'
             },
             select: {
                 amount: true

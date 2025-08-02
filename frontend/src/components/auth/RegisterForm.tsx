@@ -125,11 +125,11 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
     useEffect(() => {
         if (watchedSchoolId && selectedSchool) {
             setClasses(selectedSchool.classes || []);
-            // Получаем уникальные смены из классов школы
+            // Получаем уникальные смены из классов школы и фильтруем только 1 и 2
             const uniqueShifts = [...new Set(
                 selectedSchool.classes
                     .map(cls => cls.shift)
-                    .filter(shift => shift !== null) as string[]
+                    .filter(shift => shift !== null && (shift === '1' || shift === '2')) as string[]
             )];
             setShifts(uniqueShifts);
         } else {
@@ -302,7 +302,14 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
             <Controller
                 name="shift"
                 control={control}
-                rules={{ required: 'Смена обязательна' }}
+                rules={{
+                    required: 'Смена обязательна',
+                    validate: (value) => {
+                        if (!value) return 'Смена обязательна';
+                        if (value !== '1' && value !== '2') return 'Смена должна быть 1 или 2';
+                        return true;
+                    }
+                }}
                 render={({ field }) => (
                     <FormControl fullWidth margin="normal" required>
                         <InputLabel id="shift-label">Смена</InputLabel>
@@ -312,13 +319,19 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
                             id="shift"
                             label="Смена"
                             disabled={isLoading || shifts.length === 0}
+                            error={!!errors.shift}
                         >
                             {shifts.map((shift) => (
                                 <MenuItem key={shift} value={shift}>
-                                    {shift}
+                                    Смена {shift}
                                 </MenuItem>
                             ))}
                         </Select>
+                        {errors.shift && (
+                            <Typography variant="caption" color="error" sx={{ mt: 0.5, display: 'block' }}>
+                                {errors.shift.message}
+                            </Typography>
+                        )}
                     </FormControl>
                 )}
             />

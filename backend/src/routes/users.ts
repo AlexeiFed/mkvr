@@ -18,10 +18,6 @@ router.get('/', async (req: Request, res: Response) => {
         const { school, grade, city, role, page = 1, pageSize = 20 } = req.query;
         const where: any = {};
         if (role) where.role = role;
-        // Убираем фильтры по строковым полям, так как будем фильтровать по связям
-        // if (school) where.school = { contains: String(school), mode: 'insensitive' };
-        // if (grade) where.grade = { contains: String(grade), mode: 'insensitive' };
-        // Убираем фильтр по city пользователя, так как будем фильтровать по городу школы
 
         const skip = (Number(page) - 1) * Number(pageSize);
         const users = await prisma.user.findMany({
@@ -74,7 +70,7 @@ router.get('/', async (req: Request, res: Response) => {
 
         // Обрабатываем данные, чтобы показать актуальную школу и класс
         let processedUsers = users.map(user => {
-            const latestOrder = user.ordersAsChild[0];
+            const latestOrder = user.ordersAsChild?.[0];
             const actualSchool = latestOrder?.workshop?.school?.name || user.school;
             const actualGrade = latestOrder?.workshop?.class?.name || user.grade;
 
@@ -101,20 +97,31 @@ router.get('/', async (req: Request, res: Response) => {
             processedUsers = processedUsers.filter(user => user.classId === classId);
         }
 
-        // Фильтруем по городу из адреса школы, если указан фильтр
+        // Фильтруем по городу, если указан фильтр
         if (city) {
-            processedUsers = processedUsers.filter(user => {
-                if (!user.schoolAddress) return false;
-                const schoolCity = user.schoolAddress.split(',')[0]?.trim();
-                return schoolCity && schoolCity.toLowerCase().includes(String(city).toLowerCase());
-            });
+            processedUsers = processedUsers.filter(user =>
+                user.schoolAddress?.toLowerCase().includes(String(city).toLowerCase())
+            );
         }
 
-        const total = processedUsers.length; // Используем количество отфильтрованных пользователей
-        res.json({ users: processedUsers, total });
+        const total = await prisma.user.count({ where });
+
+        return res.json({
+            success: true,
+            users: processedUsers,
+            pagination: {
+                page: Number(page),
+                pageSize: Number(pageSize),
+                total,
+                totalPages: Math.ceil(total / Number(pageSize))
+            }
+        });
     } catch (error) {
         console.error('Ошибка получения пользователей:', error);
-        res.status(500).json({ error: 'Ошибка получения пользователей' });
+        return res.status(500).json({
+            success: false,
+            error: 'Ошибка при получении пользователей'
+        });
     }
 });
 
