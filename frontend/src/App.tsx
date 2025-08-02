@@ -33,13 +33,13 @@ const RoleBasedRedirect: React.FC = () => {
   if (!user) return <Navigate to="/login" replace />;
 
   switch (user.role) {
-    case 'admin':
+    case 'ADMIN':
       return <Navigate to="/admin" replace />;
-    case 'child':
+    case 'CHILD':
       return <Navigate to="/child" replace />;
-    case 'parent':
+    case 'PARENT':
       return <Navigate to="/parent" replace />;
-    case 'executor':
+    case 'EXECUTOR':
       return <Navigate to="/executor" replace />;
     default:
       return <Navigate to="/login" replace />;
@@ -69,6 +69,25 @@ const AppContent = () => {
   const { token, user, isLoading } = useSelector((state: RootState) => state.auth);
 
   useEffect(() => {
+    // Принудительно очищаем старые токены с неправильными ролями
+    const oldToken = localStorage.getItem('token');
+    if (oldToken) {
+      try {
+        const payload = JSON.parse(atob(oldToken.split('.')[1]));
+        if (payload.role && payload.role !== payload.role.toUpperCase()) {
+          console.log('[App] Clearing old token with lowercase role');
+          localStorage.removeItem('token');
+          window.location.reload();
+          return;
+        }
+      } catch (error) {
+        console.log('[App] Error parsing token, clearing it:', error);
+        localStorage.removeItem('token');
+        window.location.reload();
+        return;
+      }
+    }
+
     if (token && !user) {
       // @ts-expect-error временно для thunk
       dispatch(fetchCurrentUser());
@@ -101,7 +120,7 @@ const AppContent = () => {
       <Route
         path="/admin/*"
         element={
-                          <ProtectedRoute allowedRoles={['ADMIN']}>
+          <ProtectedRoute allowedRoles={['ADMIN']}>
             <MainLayout>
               <Routes>
                 <Route path="/" element={<Dashboard />} />
@@ -123,7 +142,7 @@ const AppContent = () => {
       <Route
         path="/child/*"
         element={
-                          <ProtectedRoute allowedRoles={['CHILD']}>
+          <ProtectedRoute allowedRoles={['CHILD']}>
             <ChildLayout>
               <Routes>
                 <Route path="/" element={<ChildHome />} />
@@ -139,7 +158,7 @@ const AppContent = () => {
       <Route
         path="/parent/*"
         element={
-                          <ProtectedRoute allowedRoles={['PARENT']}>
+          <ProtectedRoute allowedRoles={['PARENT']}>
             <div>Родительская панель (будет реализована)</div>
           </ProtectedRoute>
         }
@@ -149,7 +168,7 @@ const AppContent = () => {
       <Route
         path="/executor/*"
         element={
-                          <ProtectedRoute allowedRoles={['EXECUTOR']}>
+          <ProtectedRoute allowedRoles={['EXECUTOR']}>
             <MainLayout>
               <Routes>
                 <Route path="/" element={<ExecutorDashboard />} />

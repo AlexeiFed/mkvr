@@ -323,7 +323,7 @@ router.post('/:chatId/messages', authenticateToken, async (req: Request, res: Re
             });
         }
 
-        if (userRole !== 'admin' && chat.parentId !== userId) {
+        if (userRole !== 'ADMIN' && chat.parentId !== userId) {
             return res.status(403).json({
                 success: false,
                 error: 'Нет доступа к этому чату'

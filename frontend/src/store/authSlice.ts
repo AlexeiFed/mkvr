@@ -180,7 +180,10 @@ const authSlice = createSlice({
             })
             .addCase(loginUser.rejected, (state, action) => {
                 state.isLoading = false;
-                state.error = action.error.message || 'Ошибка входа';
+                state.error = action.error.message || 'Ошибка авторизации';
+                // Очищаем старый токен при ошибке входа
+                localStorage.removeItem('token');
+                console.log('[authSlice] Cleared token due to login error');
             });
 
         // Logout
@@ -223,6 +226,7 @@ const authSlice = createSlice({
                 state.token = null;
                 state.isAuthenticated = false;
                 localStorage.removeItem('token');
+                console.log('[authSlice] Cleared token due to fetchCurrentUser error');
             });
 
         // Fetch children

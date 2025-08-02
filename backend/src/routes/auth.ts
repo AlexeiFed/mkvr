@@ -328,15 +328,18 @@ router.post('/login', async (req: Request, res: Response) => {
 // GET /api/auth/me - Получение данных текущего пользователя
 router.get('/me', authenticateToken, async (req: Request, res: Response) => {
     try {
+        console.log('[auth/me] req.user:', req.user);
         const userId = req.user?.id;
 
         if (!userId) {
+            console.log('[auth/me] No userId found');
             return res.status(401).json({
                 success: false,
                 error: 'Требуется аутентификация'
             });
         }
 
+        console.log('[auth/me] Looking for user with id:', userId);
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: {
@@ -356,7 +359,10 @@ router.get('/me', authenticateToken, async (req: Request, res: Response) => {
             },
         });
 
+        console.log('[auth/me] Found user:', user);
+
         if (!user) {
+            console.log('[auth/me] User not found');
             return res.status(404).json({
                 success: false,
                 error: 'Пользователь не найден'
@@ -368,6 +374,7 @@ router.get('/me', authenticateToken, async (req: Request, res: Response) => {
             user
         });
     } catch (error) {
+        console.error('[auth/me] Error:', error);
         return res.status(500).json({
             success: false,
             error: 'Ошибка при получении данных пользователя'

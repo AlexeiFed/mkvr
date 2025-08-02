@@ -28,6 +28,9 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
 
+    console.log('[authenticateToken] authHeader:', authHeader);
+    console.log('[authenticateToken] token:', token ? 'present' : 'missing');
+
     if (!token) {
         console.error('Ошибка авторизации: токен доступа не предоставлен');
         res.status(401).json({
@@ -44,6 +47,7 @@ export const authenticateToken = (req: Request, res: Response, next: NextFunctio
             role: string;
         };
 
+        console.log('[authenticateToken] decoded token:', decoded);
         req.user = decoded;
         next();
     } catch (error) {
@@ -100,7 +104,7 @@ export const requireOwnershipOrAdmin = (req: Request, res: Response, next: NextF
     const userId = req.user.id;
 
     // Админ может управлять любыми ресурсами
-            if (req.user.role === 'ADMIN') {
+    if (req.user.role === 'ADMIN') {
         next();
         return;
     }
