@@ -2776,3 +2776,16 @@
 - Middleware requireRole сравнивает роли без преобразования регистра
 - Обновлены типы TypeScript для соответствия enum значениям
 - Добавлена автоматическая очистка токенов с неправильными ролями при загрузке приложения
+
+## [2025-08-02] - Исправление хардкода localhost в компонентах
+
+### Исправлено
+- Заменены все fetch запросы к localhost:3001 на использование api сервиса
+- Исправлены WebSocket подключения - теперь используют SOCKET_URL из конфигурации
+- Исправлены URL для загрузки файлов и медиа
+- Добавлена конфигурация SOCKET_URL в api.ts для централизованного управления
+
+### Технические изменения
+- Добавлен экспорт SOCKET_URL из api.ts
+- Обновлены компоненты: WorkshopsContainer, WorkshopDetails, UsersContainer, ExecutorDashboard, ChildHome, ChildLayout, ChildMenu, ChatContainer, ChildWorkshopSignUp
+- Все компоненты теперь используют единую конфигурацию API URL

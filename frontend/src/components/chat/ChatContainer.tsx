@@ -5,23 +5,23 @@
  * @created: 2025-01-12
  */
 
-import React, { useEffect, useState } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
-import { Box, Typography, CircularProgress, Alert, useTheme, useMediaQuery } from '@mui/material';
-import { io, Socket } from 'socket.io-client';
-import type { RootState } from '../../store';
-import type { AppDispatch } from '../../store';
-import type { Message } from '../../types';
-import { fetchConversations, addMessage, setCurrentChat } from '../../store/chatSlice';
+import React, { useState, useEffect } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { Box, Typography, Button, Grid, Card, CardContent, Chip, IconButton, Dialog, DialogTitle, DialogContent, DialogActions, TextField, FormControl, InputLabel, Select, MenuItem, Alert, CircularProgress, List, ListItem, ListItemText, ListItemAvatar, Avatar, Divider, Badge } from '@mui/material';
+import { Add as AddIcon, Edit as EditIcon, Delete as DeleteIcon, Visibility as ViewIcon, Search as SearchIcon, Send as SendIcon, Chat as ChatIcon, Person as PersonIcon } from '@mui/icons-material';
+import { useNavigate } from 'react-router-dom';
+import { io as socketIOClient, Socket } from 'socket.io-client';
+import { api, SOCKET_URL } from '../../services/api';
+import type { User, Chat, Message } from '../../types';
 import ChatList from './ChatList';
 import ChatWindow from './ChatWindow';
-import PushNotificationSetup from './PushNotificationSetup';
 import MobileChatView from './MobileChatView';
+import PushNotificationSetup from './PushNotificationSetup';
 
 const ChatContainer: React.FC = () => {
-    const dispatch = useDispatch<AppDispatch>();
-    const { conversations, currentChat, isLoading, error } = useSelector((state: RootState) => state.chat);
-    const { user } = useSelector((state: RootState) => state.auth);
+    const dispatch = useDispatch();
+    const { conversations, currentChat, isLoading, error } = useSelector((state: any) => state.chat);
+    const { user } = useSelector((state: any) => state.auth);
     const [socket, setSocket] = useState<Socket | null>(null);
     const theme = useTheme();
     const isMobile = useMediaQuery(theme.breakpoints.down('md'));
@@ -34,7 +34,7 @@ const ChatContainer: React.FC = () => {
         dispatch(fetchConversations());
 
         // Подключаемся к WebSocket
-        const newSocket = io('http://localhost:3001', {
+        const newSocket = socketIOClient(SOCKET_URL, {
             transports: ['websocket'],
             withCredentials: true
         });
@@ -64,8 +64,8 @@ const ChatContainer: React.FC = () => {
                     background: user?.role === 'CHILD'
                         ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
                         : 'transparent',
-                            borderRadius: user?.role === 'CHILD' ? 2 : 0,
-        margin: user?.role === 'CHILD' ? 2 : 0
+                    borderRadius: user?.role === 'CHILD' ? 2 : 0,
+                    margin: user?.role === 'CHILD' ? 2 : 0
                 }}
             >
                 <CircularProgress sx={{ color: user?.role === 'CHILD' ? '#fff' : 'primary' }} />
@@ -82,7 +82,7 @@ const ChatContainer: React.FC = () => {
     }
 
     // Определяем стили в зависимости от роли пользователя
-            const isChild = user?.role === 'CHILD';
+    const isChild = user?.role === 'CHILD';
 
     // Показываем мобильную версию на мобильных устройствах
     if (isMobileDevice) {

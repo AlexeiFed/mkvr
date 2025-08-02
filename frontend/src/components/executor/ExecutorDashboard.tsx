@@ -34,7 +34,7 @@ import {
     Notifications as NotificationsIcon,
     Assignment as AssignmentIcon
 } from '@mui/icons-material';
-import { api } from '../../services/api';
+import { api, SOCKET_URL } from '../../services/api';
 import { PushNotificationService } from '../../services/pushNotifications';
 import { io as socketIOClient } from 'socket.io-client';
 import type { WorkshopExecutor } from '../../types';
@@ -52,7 +52,7 @@ const ExecutorDashboard: React.FC = () => {
         checkNotificationStatus();
 
         // Подключаемся к WebSocket для обновления данных в реальном времени
-        const socket = socketIOClient('http://localhost:3001');
+        const socket = socketIOClient(SOCKET_URL);
 
         socket.on('workshop:updated', () => {
             console.log('Получено обновление мастер-класса, перезагружаем данные...');

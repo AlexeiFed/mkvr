@@ -38,8 +38,7 @@ import type { RootState, AppDispatch } from '../../store';
 import { fetchWorkshopById, updateWorkshopPayment } from '../../store/workshopsSlice';
 import type { WorkshopOrder } from '../../types';
 import { io as socketIOClient, Socket } from 'socket.io-client';
-
-const SOCKET_URL = 'http://localhost:3001';
+import { api, SOCKET_URL } from '../../services/api';
 
 // Новая структура для двухуровневого заголовка
 interface GroupedHeader {
@@ -209,20 +208,13 @@ const WorkshopDetails: React.FC = () => {
         if (!id) return;
 
         try {
-            const response = await fetch(`http://localhost:3001/api/workshops/${id}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${localStorage.getItem('token')}`
-                },
-                body: JSON.stringify({
-                    executor: editData.executor,
-                    phone: editData.phone,
-                    notes: editData.notes
-                })
+            const response = await api.put(`/workshops/${id}`, {
+                executor: editData.executor,
+                phone: editData.phone,
+                notes: editData.notes
             });
 
-            if (response.ok) {
+            if (response.status === 200) {
                 setIsEditing(false);
                 dispatch(fetchWorkshopById(id));
             }

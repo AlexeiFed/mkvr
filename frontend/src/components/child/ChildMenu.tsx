@@ -28,6 +28,7 @@ import type { RootState } from '../../store';
 import type { AppDispatch } from '../../store';
 import { fetchConversations } from '../../store/chatSlice';
 import { io } from 'socket.io-client';
+import { api, SOCKET_URL } from '../../services/api';
 
 interface ChildMenuProps {
     currentUser: User;
@@ -76,7 +77,7 @@ const ChildMenu: React.FC<ChildMenuProps> = ({
         dispatch(fetchConversations());
 
         // Подключаемся к WebSocket для получения обновлений в реальном времени
-        const socket = io('http://localhost:3001', {
+        const socket = io(SOCKET_URL, {
             transports: ['websocket'],
             withCredentials: true
         });

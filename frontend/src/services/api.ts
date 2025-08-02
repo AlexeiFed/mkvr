@@ -8,9 +8,11 @@
 import axios from 'axios';
 
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api';
+const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:3001';
 
 // Отладочная информация
 console.log('API_BASE_URL:', API_BASE_URL);
+console.log('SOCKET_URL:', SOCKET_URL);
 console.log('NODE_ENV:', import.meta.env.MODE);
 console.log('VITE_API_URL:', import.meta.env.VITE_API_URL);
 console.log('Все переменные окружения:', import.meta.env);
@@ -47,5 +49,8 @@ api.interceptors.response.use(
         return Promise.reject(error);
     }
 );
+
+// Экспортируем URL для использования в других компонентах
+export { SOCKET_URL };
 
 export default api; 

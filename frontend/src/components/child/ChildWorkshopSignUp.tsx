@@ -27,6 +27,7 @@ import type { Workshop, WorkshopOrder } from '../../types';
 import type { User } from '../../store/authSlice';
 import type { SubService } from '../../store/subServicesSlice';
 import ComplectationCard from '../orders/ComplectationCard';
+import { api } from '../../services/api';
 
 interface ChildWorkshopSignUpProps {
     open: boolean;
@@ -93,13 +94,12 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
     // Загрузка комплектации для мастер-класса
     useEffect(() => {
         if (open && workshop?.service?.id) {
-            fetch(`http://localhost:3001/api/subServices/service/${workshop.service.id}`)
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Ответ backend по комплектующим:', data);
-                    if (data.success && Array.isArray(data.subServices)) {
+            api.get(`/subServices/service/${workshop.service.id}`)
+                .then(response => {
+                    console.log('Ответ backend по комплектующим:', response.data);
+                    if (response.data.success && Array.isArray(response.data.subServices)) {
                         // Фильтрация по возрасту
-                        const availableComplectations = data.subServices.filter(
+                        const availableComplectations = response.data.subServices.filter(
                             (comp: SubService) => !comp.minAge || comp.minAge <= (currentUser.age || 0)
                         );
                         // Сортировка по полю order для синхронизации с порядком админа
@@ -190,14 +190,8 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
         setError(null);
 
         try {
-            const response = await fetch(`http://localhost:3001/api/orders/${order.id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                }
-            });
-
-            const result = await response.json();
+            const response = await api.delete(`/orders/${order.id}`);
+            const result = response.data;
             if (result.success) {
                 setShowCancelSuccess(true);
                 setTimeout(() => {
@@ -245,14 +239,8 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
                     amount: calculateTotalPrice(),
                     selectedComplectations: formData.selectedComplectations
                 };
-                const response = await fetch(`http://localhost:3001/api/orders/${order.id}`, {
-                    method: 'PUT',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(orderData),
-                });
-                const result = await response.json();
+                const response = await api.put(`/orders/${order.id}`, orderData);
+                const result = response.data;
                 if (result.success) {
                     setShowSuccess(true);
                     setTimeout(() => {
@@ -279,14 +267,8 @@ const ChildWorkshopSignUp: React.FC<ChildWorkshopSignUpProps> = ({
                     selectedComplectations: formData.selectedComplectations,
                     workshopId: workshop.id
                 };
-                const response = await fetch('http://localhost:3001/api/orders', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify(orderData),
-                });
-                const result = await response.json();
+                const response = await api.post('/orders', orderData);
+                const result = response.data;
                 if (result.success) {
                     setShowSuccess(true);
                     setTimeout(() => {

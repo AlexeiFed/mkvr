@@ -27,8 +27,10 @@ import { logoutUser, updateUserProfile } from '../../store/authSlice';
 import { fetchChildWorkshops } from '../../store/workshopsSlice';
 import type { RootState, AppDispatch } from '../../store';
 import { io as socketIOClient, Socket } from 'socket.io-client';
+import { api, SOCKET_URL } from '../../services/api';
 
-const SOCKET_URL = 'http://localhost:3001';
+// Убираем хардкод localhost
+// const SOCKET_URL = 'http://localhost:3001';
 
 const ChildHome: React.FC = () => {
     const dispatch = useDispatch<AppDispatch>();
@@ -113,7 +115,7 @@ const ChildHome: React.FC = () => {
         }
     }, [authError]);
 
-            if (!isAuthenticated || !user || user.role !== 'CHILD') {
+    if (!isAuthenticated || !user || user.role !== 'CHILD') {
         return (
             <Box sx={{
                 display: 'flex',

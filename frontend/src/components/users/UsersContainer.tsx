@@ -13,7 +13,7 @@ import { fetchUsers, setFilters, clearError, deleteUser } from '../../store/user
 import UsersList from './UsersList';
 import UserDetails from './UserDetails';
 import { io as socketIOClient, Socket } from 'socket.io-client';
-import api from '../../services/api';
+import api, { SOCKET_URL } from '../../services/api';
 import type { User } from '../../types';
 
 const UsersContainer: React.FC = () => {
@@ -27,9 +27,8 @@ const UsersContainer: React.FC = () => {
 
     // WebSocket для real-time обновлений
     useEffect(() => {
-        // Используем API URL для WebSocket подключения
-        const socketUrl = api.defaults.baseURL?.replace('/api', '') || 'http://localhost:3001';
-        const socket: Socket = socketIOClient(socketUrl, {
+        // Используем SOCKET_URL для WebSocket подключения
+        const socket: Socket = socketIOClient(SOCKET_URL, {
             transports: ['websocket'],
             withCredentials: true
         });
