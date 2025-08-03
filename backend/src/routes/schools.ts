@@ -11,6 +11,41 @@ import { PrismaClient } from '@prisma/client';
 const router = Router();
 const prisma = new PrismaClient();
 
+// GET /api/schools/test-db - Проверка подключения к базе данных
+router.get('/test-db', async (req: Request, res: Response) => {
+    try {
+        console.log('🔍 Проверка подключения к базе данных');
+        console.log('📋 DATABASE_URL:', process.env.DATABASE_URL ? 'Настроен' : 'НЕ НАСТРОЕН');
+
+        // Проверяем подключение
+        await prisma.$connect();
+        console.log('✅ Подключение к БД успешно');
+
+        // Проверяем таблицы
+        const schools = await prisma.school.findMany({ take: 1 });
+        const users = await prisma.user.findMany({ take: 1 });
+        const classes = await prisma.class.findMany({ take: 1 });
+
+        res.json({
+            success: true,
+            message: 'База данных доступна',
+            tables: {
+                schools: schools.length,
+                users: users.length,
+                classes: classes.length
+            },
+            databaseUrl: process.env.DATABASE_URL ? 'Настроен' : 'НЕ НАСТРОЕН'
+        });
+    } catch (error) {
+        console.error('❌ Ошибка подключения к БД:', error);
+        res.status(500).json({
+            success: false,
+            error: 'Ошибка подключения к базе данных',
+            message: (error as Error).message
+        });
+    }
+});
+
 // GET /api/schools - Получить все школы
 router.get('/', async (req: Request, res: Response) => {
     try {

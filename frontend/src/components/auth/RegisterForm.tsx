@@ -134,15 +134,22 @@ const RegisterForm: React.FC<RegisterFormProps> = ({ onSwitchToLogin }) => {
                         // Получаем уникальные смены из классов школы и фильтруем только 1 и 2
                         const uniqueShifts = [...new Set(
                             response.data.classes
-                                .map((cls: any) => cls.shift)
-                                .filter((shift: string) => shift !== null && (shift === '1' || shift === '2')) as string[]
+                                .map((cls: Class) => cls.shift)
+                                .filter((shift: string | null) => shift !== null && (shift === '1' || shift === '2')) as string[]
                         )];
-                        setShifts(uniqueShifts);
+
+                        // Если смены не найдены в классах, используем статические значения
+                        if (uniqueShifts.length === 0) {
+                            setShifts(['1', '2']);
+                        } else {
+                            setShifts(uniqueShifts);
+                        }
                     }
                 } catch (error) {
                     console.error('Ошибка загрузки классов:', error);
                     setClasses([]);
-                    setShifts([]);
+                    // Используем статические смены при ошибке
+                    setShifts(['1', '2']);
                 }
             };
 
