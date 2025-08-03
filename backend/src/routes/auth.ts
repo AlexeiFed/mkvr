@@ -20,6 +20,11 @@ const SALT_ROUNDS = 10;
 // POST /api/auth/register - Регистрация нового пользователя
 router.post('/register', async (req: Request, res: Response) => {
     try {
+        console.log('🔐 Запрос на регистрацию пользователя');
+        console.log('📋 Окружение:', process.env.NODE_ENV);
+        console.log('📋 DATABASE_URL:', process.env.DATABASE_URL ? 'Настроен' : 'НЕ НАСТРОЕН');
+        console.log('📋 Тело запроса:', JSON.stringify(req.body, null, 2));
+
         const {
             email,
             firstName,
@@ -37,6 +42,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
         // Базовая валидация
         if (!email || !firstName || !lastName || !password) {
+            console.log('❌ Ошибка валидации: отсутствуют обязательные поля');
             res.status(400).json({
                 success: false,
                 error: 'Email, имя, фамилия и пароль обязательны'
@@ -45,9 +51,10 @@ router.post('/register', async (req: Request, res: Response) => {
         }
 
         // Логирование возраста для отладки
-        console.log('age:', age, typeof age);
+        console.log('📋 Возраст:', age, typeof age);
         const ageNum = Number(age);
         if (isNaN(ageNum) || !Number.isInteger(ageNum) || ageNum <= 0) {
+            console.log('❌ Ошибка валидации: неверный возраст');
             res.status(400).json({
                 success: false,
                 error: 'Возраст обязателен и должен быть положительным целым числом'
@@ -58,6 +65,7 @@ router.post('/register', async (req: Request, res: Response) => {
         // Валидация для роли child
         if (role === 'CHILD') {
             if (!schoolId || !classId || !shift) {
+                console.log('❌ Ошибка валидации: для ребенка отсутствуют поля школы/класса/смены');
                 res.status(400).json({
                     success: false,
                     error: 'Для роли "ребенок" обязательны поля: школа, класс, смена'
@@ -69,6 +77,7 @@ router.post('/register', async (req: Request, res: Response) => {
         // Валидация полей для родителя
         if (role === 'PARENT') {
             if (!schoolId || !classId || !shift) {
+                console.log('❌ Ошибка валидации: для родителя отсутствуют поля школы/класса/смены');
                 res.status(400).json({
                     success: false,
                     error: 'Для роли "родитель" обязательны поля: школа, класс, смена'
@@ -76,6 +85,7 @@ router.post('/register', async (req: Request, res: Response) => {
                 return;
             }
             if (!childFirstName || !childLastName || !childAge) {
+                console.log('❌ Ошибка валидации: для родителя отсутствуют поля ребенка');
                 res.status(400).json({
                     success: false,
                     error: 'Для роли "родитель" обязательны поля: имя ребенка, фамилия ребенка, возраст ребенка'
@@ -83,6 +93,7 @@ router.post('/register', async (req: Request, res: Response) => {
                 return;
             }
             if (typeof childAge !== 'number' || !Number.isInteger(childAge) || childAge <= 0 || childAge > 18) {
+                console.log('❌ Ошибка валидации: неверный возраст ребенка');
                 res.status(400).json({
                     success: false,
                     error: 'Возраст ребенка должен быть положительным целым числом от 1 до 18'
@@ -93,6 +104,7 @@ router.post('/register', async (req: Request, res: Response) => {
 
         // Проверка длины пароля
         if (password.length < 6) {
+            console.log('❌ Ошибка валидации: пароль слишком короткий');
             res.status(400).json({
                 success: false,
                 error: 'Пароль должен содержать минимум 6 символов'
@@ -100,12 +112,15 @@ router.post('/register', async (req: Request, res: Response) => {
             return;
         }
 
+        console.log('✅ Валидация прошла успешно');
+
         // Проверка существования пользователя
         const existingUser = await prisma.user.findUnique({
             where: { email },
         });
 
         if (existingUser) {
+            console.log('❌ Пользователь уже существует:', email);
             res.status(400).json({
                 success: false,
                 error: 'Пользователь с таким email уже существует'
@@ -113,10 +128,14 @@ router.post('/register', async (req: Request, res: Response) => {
             return;
         }
 
+        console.log('✅ Пользователь не существует, продолжаем регистрацию');
+
         // Хеширование пароля
         const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
+        console.log('✅ Пароль захеширован');
 
         // Создание пользователя в транзакции
+        console.log('🔄 Начинаем транзакцию создания пользователя');
         const result = await prisma.$transaction(async (tx) => {
             // Создаем основного пользователя
             const user = await tx.user.create({
@@ -139,6 +158,8 @@ router.post('/register', async (req: Request, res: Response) => {
                     updatedAt: true,
                 },
             });
+
+            console.log('✅ Основной пользователь создан:', user.email);
 
             let childUser = null;
 
@@ -164,10 +185,13 @@ router.post('/register', async (req: Request, res: Response) => {
                         updatedAt: true,
                     },
                 });
+                console.log('✅ Ребенок создан:', childUser.email);
             }
 
             return { user, childUser };
         });
+
+        console.log('✅ Транзакция завершена успешно');
 
         // Генерация JWT токена
         const token = jwt.sign(
@@ -180,6 +204,8 @@ router.post('/register', async (req: Request, res: Response) => {
             { expiresIn: '24h' }
         );
 
+        console.log('✅ JWT токен сгенерирован');
+
         // Отправляем WebSocket событие о регистрации нового пользователя
         if (req.app.get('io')) {
             const io = req.app.get('io');
@@ -188,9 +214,11 @@ router.post('/register', async (req: Request, res: Response) => {
                     user: result.user,
                     childUser: result.childUser
                 });
+                console.log('✅ WebSocket событие отправлено');
             }
         }
 
+        console.log('✅ Регистрация завершена успешно');
         res.status(201).json({
             success: true,
             user: result.user,
@@ -198,10 +226,16 @@ router.post('/register', async (req: Request, res: Response) => {
             token
         });
     } catch (error) {
-        console.error('Registration error:', error);
+        console.error('❌ Ошибка регистрации:', error);
+        console.error('📋 Детали ошибки:', {
+            message: (error as Error).message,
+            name: (error as Error).name,
+            stack: (error as Error).stack
+        });
         res.status(500).json({
             success: false,
-            error: 'Ошибка при регистрации'
+            error: 'Ошибка при регистрации',
+            details: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined
         });
     }
 });
